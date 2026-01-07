@@ -20,6 +20,21 @@
         return;
     }
 
+    // Inicialización del mapa (Leaflet) si existe el contenedor
+    const mapEl = document.getElementById('map');
+    if (mapEl && window.L) {
+        // 1. Inicialización del mapa con las coordenadas de la FES Aragón
+        const map = L.map('map').setView([19.4745, -99.0455], 16);
+
+        // 2. Capa de tiles de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Asegurar render correcto si el contenedor se calcula tarde
+        setTimeout(() => map.invalidateSize(), 0);
+    }
+
     // Campos de vehículo
     const vehiculoModelo = document.getElementById('vehiculo_modelo');
     const vehiculoColor = document.getElementById('vehiculo_color');
