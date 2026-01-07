@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmación de Asistencia - {{ evento.titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card border-top-c1 shadow-sm">
+            <div class="card-header bg-c2 text-dark">
+                <h2 class="h5 mb-0 fw-bold">{{ evento.titulo }}</h2>
+            </div>
+            <div class="card-body">
+                {% if evento.fecha_inicio or evento.lugar %}
+                <div class="alert alert-info mb-4">
+                    {% if evento.fecha_inicio %}
+                    <p class="mb-1">
+                        <strong>Fecha:</strong> 
+                        {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}
+                        {% if evento.fecha_fin %}
+                        - {{ evento.fecha_fin.strftime('%H:%M') }}
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                    {% if evento.lugar %}
+                    <p class="mb-0"><strong>Lugar:</strong> {{ evento.lugar }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <p class="text-muted mb-4">
+                    Por favor, complete el siguiente formulario para confirmar su asistencia al evento.
+                    Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+                </p>
+
+                <!-- Mensaje de error -->
+                <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+
+                <!-- Formulario -->
+                <form id="confirmacion-form" novalidate>
+                    <input type="hidden" name="id_evento" value="{{ evento.id }}">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="dependencia" class="form-label">
+                                Dependencia <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="dependencia" name="dependencia" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="puesto" class="form-label">
+                                Puesto <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="puesto" name="puesto" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="grado" class="form-label">
+                                Grado <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="grado" name="grado" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Dr.">Dr.</option>
+                                <option value="Dra.">Dra.</option>
+                                <option value="Mtro.">Mtro.</option>
+                                <option value="Mtra.">Mtra.</option>
+                                <option value="Lic.">Lic.</option>
+                                <option value="Ing.">Ing.</option>
+                                <option value="Arq.">Arq.</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-9">
+                            <label for="nombre_completo" class="form-label">
+                                Nombre Completo <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" 
+                                   placeholder="Sin incluir el grado" required>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="trae_vehiculo" name="trae_vehiculo">
+                            <label class="form-check-label fw-bold" for="trae_vehiculo">
+                                Asistiré con vehículo
+                            </label>
+                        </div>
+                        <small class="text-muted">Marque esta casilla si asistirá con vehículo propio</small>
+                    </div>
+
+                    <div id="vehiculo-fields" class="d-none">
+                        <div class="alert alert-warning mb-3">
+                            <small>Si trae vehículo, los siguientes campos son obligatorios:</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vehiculo_modelo" class="form-label">
+                                    Modelo del Vehículo <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="vehiculo_modelo" 
+                                       name="vehiculo_modelo" placeholder="Ej: Toyota Corolla 2020">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="vehiculo_color" class="form-label">
+                                    Color del Vehículo <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="vehiculo_color" 
+                                       name="vehiculo_color" placeholder="Ej: Blanco">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="vehiculo_placas" class="form-label">
+                                Placas del Vehículo <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="vehiculo_placas" 
+                                   name="vehiculo_placas" placeholder="Ej: ABC-123-D" 
+                                   style="text-transform: uppercase;">
+                            <small class="text-muted">Las placas se guardarán en mayúsculas sin espacios ni guiones</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                            <span id="submit-text">Confirmar Asistencia</span>
+                            <span id="submit-spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                                <span class="visually-hidden">Procesando...</span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/form.js') }}"></script>
+{% endblock %}

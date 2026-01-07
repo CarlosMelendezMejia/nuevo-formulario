@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if page == 'login' %}Login Administrador{% else %}Panel de Administración{% endif %} - FES Aragón
+{% endblock %}
+
+{% block content %}
+
+{% if page == 'login' %}
+<!-- PÁGINA DE LOGIN -->
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-top-c1 shadow-sm">
+            <div class="card-header bg-c2 text-dark">
+                <h2 class="h5 mb-0 fw-bold">Acceso Administrador</h2>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- PANEL DE ADMINISTRACIÓN -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h4 text-c3 mb-0">Panel de Administración</h2>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-secondary btn-sm">Cerrar Sesión</a>
+</div>
+
+<!-- CREAR NUEVO EVENTO -->
+<div class="card border-top-c1 shadow-sm mb-4">
+    <div class="card-header bg-c2 text-dark">
+        <h3 class="h6 mb-0 fw-bold">Crear Nuevo Evento</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('crear_evento') }}">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="slug" class="form-label">
+                        Slug (URL) <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="slug" name="slug" 
+                           placeholder="informe-2025" required pattern="[a-z0-9\-]+">
+                    <small class="text-muted">Solo letras minúsculas, números y guiones</small>
+                </div>
+
+                <div class="col-md-8">
+                    <label for="titulo" class="form-label">
+                        Título <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="titulo" name="titulo" 
+                           placeholder="Primer Informe de Gestión 2025" required>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                    <input type="datetime-local" class="form-control" id="fecha_inicio" name="fecha_inicio">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                    <input type="datetime-local" class="form-control" id="fecha_fin" name="fecha_fin">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="lugar" class="form-label">Lugar</label>
+                    <input type="text" class="form-control" id="lugar" name="lugar" 
+                           placeholder="Auditorio Principal">
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="activo" name="activo">
+                <label class="form-check-label" for="activo">
+                    <strong>Activar este evento</strong> (desactivará todos los demás)
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Crear Evento</button>
+        </form>
+    </div>
+</div>
+
+<!-- LISTA DE EVENTOS -->
+<div class="card border-top-c1 shadow-sm mb-4">
+    <div class="card-header bg-c2 text-dark">
+        <h3 class="h6 mb-0 fw-bold">Eventos Registrados</h3>
+    </div>
+    <div class="card-body">
+        {% if eventos %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Slug</th>
+                        <th>Título</th>
+                        <th>Fecha Inicio</th>
+                        <th>Lugar</th>
+                        <th>Estado</th>
+                        <th>Confirmaciones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos %}
+                    <tr>
+                        <td>{{ evento.id }}</td>
+                        <td><code>{{ evento.slug }}</code></td>
+                        <td>{{ evento.titulo }}</td>
+                        <td>
+                            {% if evento.fecha_inicio %}
+                            {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ evento.lugar or '-' }}</td>
+                        <td>
+                            {% if evento.activo %}
+                            <span class="badge bg-success">Activo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_panel', slug=evento.slug) }}" class="badge bg-c3 text-white">
+                                {{ evento.total_confirmaciones }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                {% if evento.activo %}
+                                <form method="POST" action="{{ url_for('desactivar_evento', evento_id=evento.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-warning" title="Desactivar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-circle" viewBox="0 0 16 16">
+                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                            <path d="M5 6.25a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5zm3.5 0a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('activar_evento', evento_id=evento.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-success" title="Activar">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle" viewBox="0 0 16 16">
+                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                            <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('export_csv', slug=evento.slug) }}" 
+                                   class="btn btn-outline-primary" title="Exportar CSV">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No hay eventos registrados aún.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CONFIRMACIONES DEL EVENTO SELECCIONADO -->
+{% if slug_selected %}
+<div class="card border-top-c1 shadow-sm">
+    <div class="card-header bg-c2 text-dark d-flex justify-content-between align-items-center">
+        <h3 class="h6 mb-0 fw-bold">
+            Confirmaciones: {{ evento_selected.titulo }}
+        </h3>
+        <a href="{{ url_for('export_csv', slug=slug_selected) }}" class="btn btn-sm btn-primary">
+            Exportar CSV
+        </a>
+    </div>
+    <div class="card-body">
+        {% if confirmaciones %}
+        <p class="text-muted mb-3">Total: {{ confirmaciones|length }} confirmaciones</p>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Dependencia</th>
+                        <th>Puesto</th>
+                        <th>Grado</th>
+                        <th>Nombre</th>
+                        <th>Vehículo</th>
+                        <th>Modelo</th>
+                        <th>Color</th>
+                        <th>Placas</th>
+                        <th>Fecha Confirmación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conf in confirmaciones %}
+                    <tr>
+                        <td>{{ conf.dependencia }}</td>
+                        <td>{{ conf.puesto }}</td>
+                        <td>{{ conf.grado }}</td>
+                        <td>{{ conf.nombre_completo }}</td>
+                        <td>
+                            {% if conf.trae_vehiculo %}
+                            <span class="badge bg-info">Sí</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ conf.vehiculo_modelo or '-' }}</td>
+                        <td>{{ conf.vehiculo_color or '-' }}</td>
+                        <td><code>{{ conf.vehiculo_placas or '-' }}</code></td>
+                        <td>{{ conf.confirmado_en.strftime('%d/%m/%Y %H:%M') if conf.confirmado_en else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No hay confirmaciones para este evento aún.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
