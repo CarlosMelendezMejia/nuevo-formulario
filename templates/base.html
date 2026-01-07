@@ -44,7 +44,7 @@
     {% endwith %}
 
     <!-- Contenido Principal -->
-    <main class="main-content py-4">
+    <main class="main-content py-4 {{ 'px-3 px-md-4' if request.path.startswith('/admin') else '' }}">
         {% block content %}{% endblock %}
     </main>
 
