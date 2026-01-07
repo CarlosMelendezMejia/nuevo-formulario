@@ -6,6 +6,7 @@ import os
 import csv
 import io
 import logging
+import re
 from functools import wraps
 from datetime import datetime
 
@@ -418,6 +419,92 @@ def crear_evento():
         flash('Error al crear el evento', 'danger')
     
     return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/evento/<int:evento_id>/editar', methods=['GET', 'POST'])
+@admin_required
+def editar_evento(evento_id):
+    """Editar un evento existente"""
+    try:
+        conn = db_conn()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM evento WHERE id = %s", (evento_id,))
+        evento = cursor.fetchone()
+
+        if not evento:
+            cursor.close()
+            conn.close()
+            flash('Evento no encontrado', 'danger')
+            return redirect(url_for('admin_panel'))
+
+        if request.method == 'GET':
+            cursor.close()
+            conn.close()
+            return render_template('editar_evento.html', evento=evento)
+
+        # POST: actualizar
+        slug = (request.form.get('slug') or '').strip()
+        titulo = (request.form.get('titulo') or '').strip()
+        fecha_inicio = request.form.get('fecha_inicio') or None
+        fecha_fin = request.form.get('fecha_fin') or None
+        lugar = (request.form.get('lugar') or '').strip() or None
+        activo = request.form.get('activo') == 'on'
+
+        if not slug or not titulo:
+            cursor.close()
+            conn.close()
+            flash('El slug y el título son obligatorios', 'danger')
+            return redirect(url_for('editar_evento', evento_id=evento_id))
+
+        if not re.fullmatch(r'[a-z0-9\-]+', slug):
+            cursor.close()
+            conn.close()
+            flash('Slug inválido. Usa solo minúsculas, números y guiones.', 'danger')
+            return redirect(url_for('editar_evento', evento_id=evento_id))
+
+        # Si se marca activo, desactivar todos los demás
+        cursor2 = conn.cursor()
+        try:
+            if activo:
+                cursor2.execute("UPDATE evento SET activo = FALSE WHERE id <> %s", (evento_id,))
+
+            cursor2.execute(
+                """
+                UPDATE evento
+                SET slug = %s,
+                    titulo = %s,
+                    fecha_inicio = %s,
+                    fecha_fin = %s,
+                    lugar = %s,
+                    activo = %s
+                WHERE id = %s
+                """,
+                (slug, titulo, fecha_inicio, fecha_fin, lugar, activo, evento_id)
+            )
+
+            conn.commit()
+
+        except MySQLError as e:
+            conn.rollback()
+            if e.errno == 1062:
+                flash('Ya existe un evento con ese slug', 'danger')
+                return redirect(url_for('editar_evento', evento_id=evento_id))
+            logger.error(f"Error MySQL al editar evento: {e}")
+            flash('Error al actualizar el evento', 'danger')
+            return redirect(url_for('editar_evento', evento_id=evento_id))
+        finally:
+            cursor2.close()
+            cursor.close()
+            conn.close()
+
+        flash('Evento actualizado exitosamente', 'success')
+        return redirect(url_for('admin_panel'))
+
+    except Exception as e:
+        logger.error(f"Error al editar evento: {e}")
+        flash('Error al editar el evento', 'danger')
+        return redirect(url_for('admin_panel'))
 
 
 @app.route('/admin/evento/<int:evento_id>/activar', methods=['POST'])

@@ -159,6 +159,12 @@
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
+                                <!-- Editar Evento -->
+                                <a href="{{ url_for('editar_evento', evento_id=evento.id) }}"
+                                   class="btn btn-outline-secondary" title="Editar evento">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </a>
+
                                 <!-- Ver Confirmaciones -->
                                 <a href="{{ url_for('admin_panel', slug=evento.slug) }}" 
                                    class="btn btn-outline-info" title="Ver confirmaciones">
