@@ -18,6 +18,12 @@
                 <p class="lead text-muted mb-3">
                     Su asistencia al evento ha sido confirmada exitosamente.
                 </p>
+
+                {% if conf_id %}
+                <p class="mb-3">
+                    <span class="badge bg-c2 text-dark">Folio de confirmación: {{ conf_id }}</span>
+                </p>
+                {% endif %}
                 
                 <p class="text-muted">
                     Gracias por su confirmación. Le esperamos en el evento.

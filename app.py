@@ -144,7 +144,12 @@ def evento_form(slug):
 @app.route('/success')
 def success():
     """Página de confirmación exitosa"""
-    return render_template('success.html')
+    conf_id = request.args.get('conf_id')
+    if conf_id is not None and str(conf_id).isdigit():
+        conf_id = int(conf_id)
+    else:
+        conf_id = None
+    return render_template('success.html', conf_id=conf_id)
 
 
 @app.route('/api/confirmacion', methods=['POST'])
@@ -231,6 +236,8 @@ def api_confirmacion():
                 ip_address,
                 user_agent
             ))
+
+            confirmacion_id = cursor.lastrowid
             
             conn.commit()
             cursor.close()
@@ -240,7 +247,7 @@ def api_confirmacion():
             
             return jsonify({
                 'ok': True,
-                'redirect': url_for('success')
+                'redirect': url_for('success', conf_id=confirmacion_id)
             }), 200
             
         except MySQLError as e:
