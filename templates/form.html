@@ -16,6 +16,16 @@
                 <h2 class="h5 mb-0 fw-bold">{{ evento.titulo }}</h2>
             </div>
             <div class="card-body">
+                <div class="mb-4">
+                    <h3 class="h6 text-c3 fw-semibold mb-2">Bienvenida(o)</h3>
+                    <p class="text-muted mb-2">
+                        Le damos la más cordial bienvenida al formulario de confirmación de asistencia para el Primer informe de Gestión 2025 Fes Aragón.
+                    </p>
+                    <p class="text-muted mb-0">
+                        Su registro nos permitirá organizar de manera adecuada el acceso, el control de asistentes y, en su caso, la logística de ingreso vehicular.
+                    </p>
+                </div>
+
                 {% if evento.fecha_inicio or evento.lugar %}
                 <div class="alert alert-info mb-4">
                     {% if evento.fecha_inicio %}
