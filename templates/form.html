@@ -112,13 +112,24 @@
                     <hr class="my-4">
 
                     <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="trae_vehiculo" name="trae_vehiculo">
-                            <label class="form-check-label fw-bold" for="trae_vehiculo">
-                                Soy externo a FES Aragón y asistiré con vehículo
-                            </label>
+                        <label class="form-label fw-bold d-block mb-2">
+                            ¿Asistirá con vehículo? <span class="text-danger">*</span>
+                        </label>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="trae_vehiculo_si" name="trae_vehiculo" value="si" required>
+                                <label class="form-check-label" for="trae_vehiculo_si">
+                                    Sí, soy externo a FES Aragón y asistiré con vehículo
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" id="trae_vehiculo_no" name="trae_vehiculo" value="no">
+                                <label class="form-check-label" for="trae_vehiculo_no">
+                                    No
+                                </label>
+                            </div>
                         </div>
-                        <small class="text-muted">Marque esta casilla si asistirá con vehículo propio. En caso de ser trabajador de FES Aragón, no es necesario marcar esta casilla</small>
+                        <small class="text-muted">En caso de ser trabajador de FES Aragón, marque "No" y el ingreso con su vehiculo sera normal</small>
                     </div>
 
                     <div id="vehiculo_fields" style="display: none;">

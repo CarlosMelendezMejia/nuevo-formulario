@@ -151,13 +151,33 @@ def success():
 def api_confirmacion():
     """Endpoint para registrar confirmación de asistencia"""
     try:
+        def parse_trae_vehiculo(value):
+            if value is None:
+                return None
+            if isinstance(value, bool):
+                return value
+            text = str(value).strip().lower()
+            if text in ('true', '1', 'si', 'sí', 'yes', 'on'):
+                return True
+            if text in ('false', '0', 'no', 'off'):
+                return False
+            return None
+
         # Obtener datos del formulario (JSON o form-data)
         if request.is_json:
             data = request.get_json()
         else:
             data = request.form.to_dict()
-            # Convertir checkbox a boolean
-            data['trae_vehiculo'] = data.get('trae_vehiculo') == 'true' or data.get('trae_vehiculo') == 'on'
+
+        trae_vehiculo = parse_trae_vehiculo(data.get('trae_vehiculo') if isinstance(data, dict) else None)
+        if trae_vehiculo is None:
+            return jsonify({
+                'ok': False,
+                'error': 'Debe seleccionar si asistirá con vehículo'
+            }), 400
+
+        # Normalizar valor en data para consistencia
+        data['trae_vehiculo'] = trae_vehiculo
         
         # Validar campos requeridos
         required_fields = ['id_evento', 'dependencia', 'puesto', 'grado', 'nombre_completo']
@@ -169,7 +189,6 @@ def api_confirmacion():
                 }), 400
         
         # Validación condicional de vehículo
-        trae_vehiculo = data.get('trae_vehiculo', False)
         if trae_vehiculo:
             vehiculo_fields = ['vehiculo_modelo', 'vehiculo_color', 'vehiculo_placas']
             for field in vehiculo_fields:

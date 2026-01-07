@@ -8,7 +8,8 @@
 
     // Elementos del DOM
     const form = document.getElementById('confirmacion-form');
-    const traeVehiculoCheckbox = document.getElementById('trae_vehiculo');
+    const traeVehiculoSi = document.getElementById('trae_vehiculo_si');
+    const traeVehiculoNo = document.getElementById('trae_vehiculo_no');
     const vehiculoFields = document.getElementById('vehiculo_fields');
     const submitBtn = document.getElementById('submitBtn');
     const submitText = document.getElementById('submitText');
@@ -16,7 +17,7 @@
     const errorMessage = document.getElementById('error-message');
 
     // Si este script se carga en una página sin el formulario, salir sin romper.
-    if (!form || !traeVehiculoCheckbox || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage) {
+    if (!form || !traeVehiculoSi || !traeVehiculoNo || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage) {
         return;
     }
 
@@ -58,31 +59,40 @@
     const vehiculoColor = document.getElementById('vehiculo_color');
     const vehiculoPlacas = document.getElementById('vehiculo_placas');
 
-    /**
-     * Mostrar/ocultar campos de vehículo según checkbox
-     */
-    traeVehiculoCheckbox.addEventListener('change', function() {
-        if (this.checked) {
+    function setVehiculoFieldsVisible(visible) {
+        if (visible) {
             vehiculoFields.style.display = 'block';
-            // Hacer campos requeridos
             vehiculoModelo.required = true;
             vehiculoColor.required = true;
             vehiculoPlacas.required = true;
         } else {
             vehiculoFields.style.display = 'none';
-            // Quitar requerido y limpiar valores
             vehiculoModelo.required = false;
             vehiculoColor.required = false;
             vehiculoPlacas.required = false;
             vehiculoModelo.value = '';
             vehiculoColor.value = '';
             vehiculoPlacas.value = '';
-            // Remover clases de validación
             vehiculoModelo.classList.remove('is-invalid', 'is-valid');
             vehiculoColor.classList.remove('is-invalid', 'is-valid');
             vehiculoPlacas.classList.remove('is-invalid', 'is-valid');
         }
-    });
+    }
+
+    function getTraeVehiculoValue() {
+        const selected = form.querySelector('input[name="trae_vehiculo"]:checked');
+        return selected ? selected.value : null;
+    }
+
+    // Mostrar/ocultar campos de vehículo según selección Sí/No
+    function syncVehiculoFields() {
+        const value = getTraeVehiculoValue();
+        setVehiculoFieldsVisible(value === 'si');
+    }
+
+    traeVehiculoSi.addEventListener('change', syncVehiculoFields);
+    traeVehiculoNo.addEventListener('change', syncVehiculoFields);
+    syncVehiculoFields();
 
     /**
      * Convertir placas a mayúsculas mientras se escribe
@@ -135,8 +145,15 @@
             form.classList.add('was-validated');
         }
 
+        const traeVehiculoValue = getTraeVehiculoValue();
+
+        // Respuesta obligatoria (aunque el required del radio ya cubre esto)
+        if (!traeVehiculoValue) {
+            isValid = false;
+        }
+
         // Validación adicional de vehículo
-        if (traeVehiculoCheckbox.checked) {
+        if (traeVehiculoValue === 'si') {
             if (!vehiculoModelo.value.trim()) {
                 vehiculoModelo.classList.add('is-invalid');
                 isValid = false;
@@ -188,11 +205,12 @@
             data[key] = value;
         });
 
-        // Agregar checkbox de vehículo (FormData no lo incluye si no está checked)
-        data.trae_vehiculo = traeVehiculoCheckbox.checked;
+        // Convertir respuesta Sí/No a boolean (obligatorio)
+        const traeVehiculoValue = getTraeVehiculoValue();
+        data.trae_vehiculo = traeVehiculoValue === 'si' ? true : (traeVehiculoValue === 'no' ? false : null);
 
         // Si no trae vehículo, asegurar que los campos están vacíos
-        if (!data.trae_vehiculo) {
+        if (data.trae_vehiculo !== true) {
             data.vehiculo_modelo = '';
             data.vehiculo_color = '';
             data.vehiculo_placas = '';
