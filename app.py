@@ -196,8 +196,8 @@ def api_confirmacion():
                 INSERT INTO confirmacion_asistencia 
                 (id_evento, dependencia, puesto, grado, nombre_completo,
                  trae_vehiculo, vehiculo_modelo, vehiculo_color, vehiculo_placas,
-                 ip, user_agent)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 ip, user_agent, confirmado_en)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """, (
                 data['id_evento'],
                 data['dependencia'],

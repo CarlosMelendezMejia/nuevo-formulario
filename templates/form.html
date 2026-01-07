@@ -33,7 +33,7 @@
                 </p>
 
                 <!-- Mensaje de error -->
-                <div id="error-message" class="alert alert-danger d-none" role="alert"></div>
+                <div id="error-message" class="alert alert-danger" style="display: none;" role="alert"></div>
 
                 <!-- Formulario -->
                 <form id="confirmacion-form" novalidate>
@@ -128,9 +128,6 @@
                         </div>
                     </div>
 
-                    <!-- Mensaje de error -->
-                    <div id="error-message" class="alert alert-danger mt-3" style="display: none;" role="alert"></div>
-
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                             <span id="submitText">Confirmar Asistencia</span>
@@ -146,6 +143,6 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/form.js') }}"></script>
 {% endblock %}

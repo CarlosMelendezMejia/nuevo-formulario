@@ -7,13 +7,18 @@
     'use strict';
 
     // Elementos del DOM
-    const form = document.getElementById('confirmacionForm');
+    const form = document.getElementById('confirmacion-form');
     const traeVehiculoCheckbox = document.getElementById('trae_vehiculo');
     const vehiculoFields = document.getElementById('vehiculo_fields');
     const submitBtn = document.getElementById('submitBtn');
     const submitText = document.getElementById('submitText');
     const submitSpinner = document.getElementById('submitSpinner');
     const errorMessage = document.getElementById('error-message');
+
+    // Si este script se carga en una página sin el formulario, salir sin romper.
+    if (!form || !traeVehiculoCheckbox || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage) {
+        return;
+    }
 
     // Campos de vehículo
     const vehiculoModelo = document.getElementById('vehiculo_modelo');
