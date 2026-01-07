@@ -31,6 +31,24 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
+        // 3. Marcador: Teatro José Vasconcelos (lugar del evento)
+        const teatroCoords = [19.47629921397388, -99.04625437787124];
+        const iconUrl = mapEl.getAttribute('data-teatro-icon-url');
+        const teatroIcon = iconUrl
+            ? L.icon({
+                iconUrl,
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+                popupAnchor: [0, -36]
+            })
+            : undefined;
+
+        const markerOptions = teatroIcon ? { icon: teatroIcon } : undefined;
+        L.marker(teatroCoords, markerOptions)
+            .addTo(map)
+            .bindPopup('<strong>Teatro José Vasconcelos</strong><br>FES Aragón')
+            .openPopup();
+
         // Asegurar render correcto si el contenedor se calcula tarde
         setTimeout(() => map.invalidateSize(), 0);
     }
