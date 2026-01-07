@@ -47,9 +47,7 @@
     <h2 class="h4 text-c3 mb-0">Panel de Administración</h2>
     <div>
         <a href="{{ url_for('ver_todas_confirmaciones') }}" class="btn btn-info btn-sm me-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul me-1" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
-            </svg>
+            <i class="bi bi-list-ul me-1" aria-hidden="true"></i>
             Ver Todas las Confirmaciones
         </a>
         <a href="{{ url_for('admin_logout') }}" class="btn btn-outline-secondary btn-sm">Cerrar Sesión</a>
@@ -164,29 +162,20 @@
                                 <!-- Ver Confirmaciones -->
                                 <a href="{{ url_for('admin_panel', slug=evento.slug) }}" 
                                    class="btn btn-outline-info" title="Ver confirmaciones">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
-                                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                                    </svg>
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
                                 </a>
                                 
                                 <!-- Activar/Desactivar -->
                                 {% if evento.activo %}
                                 <form method="POST" action="{{ url_for('desactivar_evento', evento_id=evento.id) }}" class="d-inline">
                                     <button type="submit" class="btn btn-outline-warning" title="Desactivar">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-circle" viewBox="0 0 16 16">
-                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                                            <path d="M5 6.25a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5zm3.5 0a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5z"/>
-                                        </svg>
+                                        <i class="bi bi-pause-circle" aria-hidden="true"></i>
                                     </button>
                                 </form>
                                 {% else %}
                                 <form method="POST" action="{{ url_for('activar_evento', evento_id=evento.id) }}" class="d-inline">
                                     <button type="submit" class="btn btn-outline-success" title="Activar">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle" viewBox="0 0 16 16">
-                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                                            <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/>
-                                        </svg>
+                                        <i class="bi bi-play-circle" aria-hidden="true"></i>
                                     </button>
                                 </form>
                                 {% endif %}
@@ -194,10 +183,7 @@
                                 <!-- Exportar CSV -->
                                 <a href="{{ url_for('export_csv', slug=evento.slug) }}" 
                                    class="btn btn-outline-primary" title="Exportar CSV">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                                    </svg>
+                                    <i class="bi bi-download" aria-hidden="true"></i>
                                 </a>
                             </div>
                         </td>
