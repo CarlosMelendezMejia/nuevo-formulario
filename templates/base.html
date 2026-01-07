@@ -25,7 +25,13 @@
     <!-- Header Institucional (OBLIGATORIO) -->
     <header class="header-institucional sticky-top bg-c1 text-white py-3 shadow-sm">
         <div class="container">
-            <h1 class="h4 mb-0 text-center">Primer informe de Gestión 2025 Fes Aragón</h1>
+            <div class="d-flex align-items-center">
+                <a class="header-logos" href="{{ url_for('index') }}" aria-label="Inicio">
+                    <img src="{{ url_for('static', filename='img/logos.png') }}" alt="Logos institucionales">
+                </a>
+                <h1 class="h4 mb-0 text-center flex-grow-1">Confirmación de Asistencia a Informe FES Aragón</h1>
+                <div class="header-logos-spacer" aria-hidden="true"></div>
+            </div>
         </div>
     </header>
 

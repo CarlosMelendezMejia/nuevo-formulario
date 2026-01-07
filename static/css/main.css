@@ -64,6 +64,26 @@ body {
     text-shadow: none;
 }
 
+.header-logos,
+.header-logos-spacer {
+    width: 310px;
+    flex: 0 0 310px;
+}
+
+.header-logos {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-decoration: none;
+}
+
+.header-logos img {
+    display: block;
+    height: 80px;
+    width: auto;
+    max-width: 100%;
+}
+
 /* ============================================================================
    CARDS Y BORDES
    ============================================================================ */
