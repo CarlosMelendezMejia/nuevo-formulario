@@ -78,48 +78,61 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 5. Configurar Base de Datos
+### 7. Crear Base de Datos
 
 ```bash
-# Conectarse a MySQL
-mysql -u root -p
+# Ejecutar el schema (creará la BD y las tablas)
+mysql -u root -pwavedlizard2115 < schema.sql
 
-# Ejecutar el schema
-source schema.sql
-
-# O desde la línea de comandos:
-mysql -u root -p < schema.sql
+# O si prefieres hacerlo manualmente:
+mysql -u root -pwavedlizard2115
 ```
 
-### 6. Configurar Variables de Entorno
-
-```bash
-# Copiar archivo de ejemplo
-cp .env.example .env
-
-# Editar .env con tus configuraciones
-nano .env  # o usar tu editor preferido
+Luego en el prompt de MySQL:
+```sql
+source schema.sql;
+exit;
 ```
 
-**Configuración mínima necesaria en `.env`:**
+El schema creará:
+- Base de datos `confirmacion_db`
+- Tablas `evento` y `confirmacion_asistencia`  
+- Un evento de ejemplo ya activo
+
+### 5. Configurar Variables de Entorno
+
+El proyecto incluye un archivo `.env` pre-configurado con tus valores:
 
 ```env
 FLASK_ENV=development
-SECRET_KEY=tu_clave_secreta_muy_segura
+SECRET_KEY=tu_secreto_superseguro
 ADMIN_USER=admin
-ADMIN_PASSWORD=tu_password_admin_seguro
+ADMIN_PASSWORD=admin_fesar
 APP_PREFIX=/asistencia_eventos
 
 DB_HOST=127.0.0.1
-DB_USER=tu_usuario_mysql
-DB_PASSWORD=tu_password_mysql
-DB_NAME=fes_aragon_eventos
+DB_USER=root
+DB_PASSWORD=wavedlizard2115
+DB_NAME=confirmacion_db
 DB_PORT=3306
 ```
 
-**Nota:** El sistema soporta tanto `SECRET_KEY` como `FLASK_SECRET_KEY` para compatibilidad.
+**Si necesitas cambiar algo**, edita el archivo `.env`:
+```bash
+nano .env
+```
 
-### 7. Ejecutar la Aplicación
+### 6. Probar Conexión a MySQL (Recomendado)
+
+Antes de ejecutar la app, verifica que MySQL esté accesible:
+
+```bash
+python3 test_conexion.py
+```
+
+Este script te dirá si hay problemas de conexión y cómo solucionarlos.
+
+### 8. Ejecutar la Aplicación
 
 ```bash
 # Modo desarrollo
@@ -129,14 +142,16 @@ python app.py
 gunicorn wsgi:application --bind 0.0.0.0:5000
 ```
 
-La aplicación estará disponible en: `http://localhost:5000`
+La aplicación estará disponible en: `http://localhost:5000/asistencia_eventos/`
 
 ## 🔐 Acceso al Panel de Administración
 
-1. Navegar a: `http://localhost:5000/admin/login`
-2. Usar las credenciales configuradas en `.env`:
-   - Usuario: valor de `ADMIN_USER`
-   - Contraseña: valor de `ADMIN_PASSWORD`
+1. Navegar a: `http://localhost:5000/asistencia_eventos/admin/login`
+2. Credenciales por defecto:
+   - Usuario: `admin`
+   - Contraseña: `admin_fesar`
+
+**⚠️ IMPORTANTE:** Cambia la contraseña en el archivo `.env` antes de usar en producción.
 
 ## 📝 Uso del Sistema
 

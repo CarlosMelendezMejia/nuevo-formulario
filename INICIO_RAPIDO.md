@@ -1,134 +1,110 @@
-# 🚀 INICIO RÁPIDO - Sistema de Confirmación FES Aragón
+# 🚀 INICIO RÁPIDO - 3 PASOS
 
-## ⚡ Instalación en 5 Pasos
+## ⚡ Instalación Rápida
 
-### 1. Crear Base de Datos
+### 1️⃣ Probar Conexión a MySQL
+
 ```bash
-mysql -u root -p < schema.sql
+python3 test_conexion.py
 ```
 
-### 2. Instalar Dependencias
+Si sale ✅ todo OK, continúa al paso 2.
+Si sale ❌ error, el script te dirá qué hacer.
+
+### 2️⃣ Crear Base de Datos
+
+```bash
+mysql -u root -pwavedlizard2115 < schema.sql
+```
+
+Esto creará:
+- Base de datos: `confirmacion_db`
+- Tabla: `evento`
+- Tabla: `confirmacion_asistencia`
+- Un evento de ejemplo ya activo
+
+### 3️⃣ Instalar y Ejecutar
+
 ```bash
 pip install -r requirements.txt
-```
-
-### 3. Configurar Variables de Entorno
-```bash
-cp .env.example .env
-nano .env  # Editar con tus datos
-```
-
-**Configuración mínima:**
-```env
-FLASK_SECRET_KEY=cambiar_por_clave_segura
-DB_USER=tu_usuario_mysql
-DB_PASSWORD=tu_password_mysql
-DB_NAME=fes_aragon_eventos
-ADMIN_USER=admin
-ADMIN_PASSWORD=cambiar_password_admin
-```
-
-### 4. Ejecutar Aplicación
-```bash
 python app.py
 ```
 
-### 5. Acceder al Sistema
-- **Sitio público**: http://localhost:5000
-- **Panel admin**: http://localhost:5000/admin/login
+**¡Listo! Accede a:**
+- 🌐 Público: http://localhost:5000/asistencia_eventos/
+- 🔐 Admin: http://localhost:5000/asistencia_eventos/admin/login
 
-## 📋 Primera Configuración
-
-1. **Login como Admin**:
-   - Usuario: el configurado en `ADMIN_USER`
-   - Contraseña: la configurada en `ADMIN_PASSWORD`
-
-2. **Crear un Evento**:
-   - En el panel, llenar formulario "Crear Nuevo Evento"
-   - Slug: `informe-gestion-2025` (solo letras minúsculas, números y guiones)
-   - Título: `Primer Informe de Gestión 2025`
-   - Marcar "Activar este evento"
-   - Clic en "Crear Evento"
-
-3. **Probar el Sistema**:
-   - Ir a http://localhost:5000
-   - Verás el formulario del evento activo
-   - Completar y enviar una confirmación de prueba
-   - Volver al panel admin para ver la confirmación registrada
-
-## 🎯 Características Principales
-
-### ✅ Validaciones Automáticas
-- Campos obligatorios
-- Validación condicional de vehículo
-- Normalización de placas (MAYÚSCULAS, sin espacios/guiones)
-- Deduplicación por evento + nombre + dependencia
-
-### 📊 Panel de Administración
-- Crear/activar/desactivar eventos
-- Ver todas las confirmaciones por evento
-- Exportar a CSV (compatible con Excel)
-- Información de vehículos cuando aplique
-
-### 🎨 Diseño Institucional
-- Encabezado obligatorio: "Primer informe de Gestión 2025 Fes Aragón"
-- Paleta de colores FES Aragón
-- Diseño responsivo con Bootstrap 5
-
-## 🌐 Despliegue en Subruta
-
-Para montar en una subruta (ej: `/eventos`):
-
-```bash
-# En .env
-APP_PREFIX=eventos
-
-# Ejecutar
-python wsgi.py
-# o
-gunicorn wsgi:application
-```
-
-Acceso: `http://tuservidor.com/eventos/`
-
-## 📤 Exportar Datos
-
-1. En el panel admin, seleccionar un evento (ícono 👁)
-2. Clic en "Exportar CSV"
-3. Se descarga archivo con todas las confirmaciones
-4. Formato UTF-8 con BOM (compatible con Excel)
-
-## ⚠️ Notas Importantes
-
-- Solo puede haber **un evento activo** a la vez
-- Los **duplicados se detectan** por: evento + nombre + dependencia
-- Las **placas se normalizan** automáticamente
-- El **sistema usa connection pooling** para mejor rendimiento
-- El **panel admin está protegido** por usuario/contraseña
-
-## 🆘 Solución Rápida de Problemas
-
-**No aparece el formulario**:
-- Verificar que hay un evento activo en el panel admin
-- Revisar que la BD está correcta y accesible
-
-**Error de conexión a BD**:
-- Verificar credenciales en `.env`
-- Confirmar que MySQL está corriendo
-- Revisar que la BD existe: `SHOW DATABASES;`
-
-**Error 409 (duplicado)**:
-- Ya existe una confirmación con ese nombre en ese evento
-- Es el comportamiento esperado (previene duplicados)
-
-**No se exporta CSV**:
-- Verificar que el evento tiene confirmaciones
-- El botón solo aparece si hay datos
-
-## 📞 Contacto
-
-Para soporte técnico, contactar al área de sistemas de FES Aragón.
+**Credenciales admin:**
+- Usuario: `admin`
+- Password: `admin_fesar`
 
 ---
 
-**¡Listo para usar!** 🎉
+## 🎯 Primer Uso
+
+El script ya creó un evento de ejemplo activo. Solo:
+
+1. Ve a: http://localhost:5000/asistencia_eventos/
+2. Verás el formulario del evento
+3. Llena una confirmación de prueba
+4. Ve al admin para verla registrada
+
+---
+
+## 🔧 Si Cambiaste Algo en .env
+
+El archivo `.env` ya tiene tu configuración:
+
+```env
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=wavedlizard2115
+DB_NAME=confirmacion_db
+APP_PREFIX=/asistencia_eventos
+```
+
+Si modificaste algo, vuelve a ejecutar `python test_conexion.py` para verificar.
+
+---
+
+## 🆘 Problemas Comunes
+
+**MySQL no conecta:**
+```bash
+# Verifica que MySQL esté corriendo
+sudo systemctl status mysql
+# o
+sudo service mysql status
+```
+
+**Error "database doesn't exist":**
+```bash
+# Ejecuta el schema nuevamente
+mysql -u root -pwavedlizard2115 < schema.sql
+```
+
+**Error "Access denied":**
+- Verifica el password en `.env` (línea: `DB_PASSWORD=wavedlizard2115`)
+
+**Puerto ya en uso:**
+```bash
+# Encuentra qué usa el puerto 5000
+lsof -i :5000
+# Mata el proceso o cambia el puerto en app.py (última línea)
+```
+
+---
+
+## 📱 Producción
+
+Para producción usa Gunicorn:
+
+```bash
+pip install gunicorn
+gunicorn wsgi:application --bind 0.0.0.0:5000 --workers 4 --daemon
+```
+
+---
+
+**¿Todo funcionó?** 🎉 
+Lee `README.md` para funcionalidades avanzadas.

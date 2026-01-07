@@ -32,11 +32,11 @@ app.secret_key = os.getenv('SECRET_KEY') or os.getenv('FLASK_SECRET_KEY', 'dev-s
 
 # Configuración de base de datos
 DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
+    'host': os.getenv('DB_HOST', '127.0.0.1'),
     'port': int(os.getenv('DB_PORT', 3306)),
     'user': os.getenv('DB_USER', 'root'),
     'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'fes_aragon_eventos'),
+    'database': os.getenv('DB_NAME', 'confirmacion_db'),
     'charset': 'utf8mb4',
     'collation': 'utf8mb4_unicode_ci',
     'autocommit': True

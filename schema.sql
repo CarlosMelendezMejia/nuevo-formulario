@@ -1,9 +1,9 @@
 -- Schema para sistema de confirmación de asistencia
 -- FES Aragón - Informe de Gestión 2025
 
--- Crear base de datos (opcional, comentar si ya existe)
--- CREATE DATABASE IF NOT EXISTS confirmacion_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE confirmacion_db;
+-- Crear base de datos
+CREATE DATABASE IF NOT EXISTS confirmacion_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE confirmacion_db;
 
 -- Tabla de eventos
 CREATE TABLE IF NOT EXISTS evento (
