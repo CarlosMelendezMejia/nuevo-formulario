@@ -282,6 +282,43 @@ def admin_logout():
     return redirect(url_for('admin_login'))
 
 
+@app.route('/admin/todas-confirmaciones')
+@admin_required
+def ver_todas_confirmaciones():
+    """Ver todas las confirmaciones de todos los eventos"""
+    try:
+        conn = db_conn()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Obtener todas las confirmaciones con información del evento
+        cursor.execute("""
+            SELECT 
+                e.titulo as evento_titulo,
+                e.slug as evento_slug,
+                c.*
+            FROM confirmacion_asistencia c
+            JOIN evento e ON c.id_evento = e.id
+            ORDER BY c.confirmado_en DESC
+        """)
+        todas_confirmaciones = cursor.fetchall()
+        
+        # Obtener estadísticas
+        cursor.execute("SELECT COUNT(*) as total FROM confirmacion_asistencia")
+        stats = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('todas_confirmaciones.html',
+                             confirmaciones=todas_confirmaciones,
+                             total=stats['total'])
+        
+    except Exception as e:
+        logger.error(f"Error al cargar todas las confirmaciones: {e}")
+        flash('Error al cargar las confirmaciones', 'danger')
+        return redirect(url_for('admin_panel'))
+
+
 @app.route('/admin')
 @admin_required
 def admin_panel():
@@ -324,7 +361,8 @@ def admin_panel():
         return render_template('admin.html', 
                              eventos=eventos, 
                              confirmaciones=confirmaciones,
-                             selected_evento=selected_evento)
+                             selected_evento=selected_evento,
+                             selected_slug=selected_slug)
         
     except Exception as e:
         logger.error(f"Error en admin_panel: {e}")
