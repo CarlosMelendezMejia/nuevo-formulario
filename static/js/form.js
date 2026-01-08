@@ -16,8 +16,12 @@
     const submitSpinner = document.getElementById('submitSpinner');
     const errorMessage = document.getElementById('error-message');
 
+    const gradoSelect = document.getElementById('grado');
+    const gradoOtroWrap = document.getElementById('grado_otro_wrap');
+    const gradoOtroInput = document.getElementById('grado_otro');
+
     // Si este script se carga en una página sin el formulario, salir sin romper.
-    if (!form || !traeVehiculoSi || !traeVehiculoNo || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage) {
+    if (!form || !traeVehiculoSi || !traeVehiculoNo || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage || !gradoSelect) {
         return;
     }
 
@@ -59,6 +63,26 @@
     const vehiculoColor = document.getElementById('vehiculo_color');
     const vehiculoPlacas = document.getElementById('vehiculo_placas');
 
+    function setGradoOtroVisible(visible) {
+        if (!gradoOtroWrap || !gradoOtroInput) return;
+        if (visible) {
+            gradoOtroWrap.style.display = 'flex';
+            gradoOtroInput.required = true;
+        } else {
+            gradoOtroWrap.style.display = 'none';
+            gradoOtroInput.required = false;
+            gradoOtroInput.value = '';
+            gradoOtroInput.classList.remove('is-invalid', 'is-valid');
+            gradoOtroInput.setCustomValidity('');
+            const fb = getOrCreateInvalidFeedback(gradoOtroInput);
+            if (fb) fb.textContent = '';
+        }
+    }
+
+    function syncGradoOtro() {
+        setGradoOtroVisible(gradoSelect.value === 'Otro');
+    }
+
     function setVehiculoFieldsVisible(visible) {
         if (visible) {
             vehiculoFields.style.display = 'block';
@@ -94,6 +118,9 @@
     traeVehiculoNo.addEventListener('change', syncVehiculoFields);
     syncVehiculoFields();
 
+    gradoSelect.addEventListener('change', syncGradoOtro);
+    syncGradoOtro();
+
     /**
      * Convertir placas a mayúsculas mientras se escribe
      */
@@ -115,6 +142,7 @@
             dependencia: 'Dependencia',
             puesto: 'Puesto',
             grado: 'Grado',
+            grado_otro: 'Grado (otro)',
             nombre_completo: 'Nombre completo',
             trae_vehiculo: '¿Asistirá con vehículo?',
             vehiculo_modelo: 'Modelo del vehículo',
@@ -203,6 +231,9 @@
 
         if (field && code) {
             if (code === 'required') {
+                if (field === 'grado_otro') {
+                    return { field, message: 'Por favor especifique el grado (abreviado).' };
+                }
                 return { field, message: `Por favor complete: ${label}.` };
             }
             if (code === 'max_length') {
@@ -263,6 +294,29 @@
         }
 
         const traeVehiculoValue = getTraeVehiculoValue();
+
+        // Grado: si es "Otro", pedir especificación abreviada
+        if (gradoSelect.value === 'Otro') {
+            if (!gradoOtroInput) {
+                isValid = false;
+            } else {
+                const value = (gradoOtroInput.value || '').trim();
+                if (!value) {
+                    gradoOtroInput.classList.add('is-invalid');
+                    const fb = getOrCreateInvalidFeedback(gradoOtroInput);
+                    if (fb) fb.textContent = 'Por favor especifique el grado (abreviado).';
+                    isValid = false;
+                } else if (value.length > 20) {
+                    gradoOtroInput.classList.add('is-invalid');
+                    const fb = getOrCreateInvalidFeedback(gradoOtroInput);
+                    if (fb) fb.textContent = 'Grado (otro): máximo 20 caracteres.';
+                    isValid = false;
+                } else {
+                    gradoOtroInput.classList.remove('is-invalid');
+                    gradoOtroInput.classList.add('is-valid');
+                }
+            }
+        }
 
         // Respuesta obligatoria (aunque el required del radio ya cubre esto)
         if (!traeVehiculoValue) {

@@ -254,6 +254,13 @@ def api_confirmacion():
             if grado not in allowed_grados:
                 raise ValidationError('El campo grado es inválido', field='grado', code='invalid_choice')
 
+            if grado == 'Otro':
+                grado_otro = require_text('grado_otro', 20, 'grado (otro)')
+                # Permitir solo letras (incluye acentos), puntos y espacios (abreviado)
+                if not re.fullmatch(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ. ]+", grado_otro):
+                    raise ValidationError('El campo grado (otro) contiene caracteres inválidos', field='grado_otro', code='invalid_characters')
+                grado = grado_otro
+
             vehiculo_modelo = optional_text('vehiculo_modelo', 100, 'vehiculo_modelo')
             vehiculo_color = optional_text('vehiculo_color', 50, 'vehiculo_color')
             vehiculo_placas_raw = optional_text('vehiculo_placas', 60, 'vehiculo_placas')

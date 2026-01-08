@@ -96,6 +96,7 @@
                                 <option value="Lic.">Lic.</option>
                                 <option value="Ing.">Ing.</option>
                                 <option value="Arq.">Arq.</option>
+                                <option value="SG">Sin grado</option>
                                 <option value="Otro">Otro</option>
                             </select>
                         </div>
@@ -106,6 +107,16 @@
                             </label>
                             <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" 
                                    placeholder="Sin incluir el grado" maxlength="255" required>
+                        </div>
+                    </div>
+
+                    <div id="grado_otro_wrap" class="row mb-3" style="display: none;">
+                        <div class="col-md-6">
+                            <label for="grado_otro" class="form-label">
+                                Especifique el grado <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="grado_otro" name="grado_otro"
+                                   placeholder="abreviado" maxlength="20">
                         </div>
                     </div>
 
