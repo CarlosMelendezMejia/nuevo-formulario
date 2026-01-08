@@ -156,6 +156,60 @@ def success():
 def api_confirmacion():
     """Endpoint para registrar confirmación de asistencia"""
     try:
+        class ValidationError(Exception):
+            def __init__(self, message, field=None, code=None, meta=None):
+                super().__init__(message)
+                self.message = message
+                self.field = field
+                self.code = code
+                self.meta = meta or {}
+
+        def normalize_text(value):
+            if value is None:
+                return None
+            text = str(value)
+            # Convertir saltos de línea/tabulaciones en espacios y colapsar espacios
+            text = re.sub(r"[\r\n\t]+", " ", text)
+            text = re.sub(r"\s+", " ", text).strip()
+            return text
+
+        def require_text(field, max_len, label=None):
+            label = label or field
+            value = normalize_text(data.get(field))
+            if not value:
+                raise ValidationError(f'El campo {label} es obligatorio', field=field, code='required')
+            if len(value) > max_len:
+                raise ValidationError(
+                    f'El campo {label} excede el límite de {max_len} caracteres',
+                    field=field,
+                    code='max_length',
+                    meta={'max': max_len}
+                )
+            return value
+
+        def optional_text(field, max_len, label=None):
+            label = label or field
+            value = normalize_text(data.get(field))
+            if not value:
+                return None
+            if len(value) > max_len:
+                raise ValidationError(
+                    f'El campo {label} excede el límite de {max_len} caracteres',
+                    field=field,
+                    code='max_length',
+                    meta={'max': max_len}
+                )
+            return value
+
+        def parse_id_evento(value):
+            value = normalize_text(value)
+            if not value or not value.isdigit():
+                raise ValidationError('El campo id_evento es obligatorio', field='id_evento', code='required')
+            evento_id = int(value)
+            if evento_id <= 0:
+                raise ValidationError('El campo id_evento es inválido', field='id_evento', code='invalid')
+            return evento_id
+
         def parse_trae_vehiculo(value):
             if value is None:
                 return None
@@ -174,39 +228,74 @@ def api_confirmacion():
         else:
             data = request.form.to_dict()
 
+        if not isinstance(data, dict):
+            return jsonify({'ok': False, 'error': 'Datos inválidos'}), 400
+
         trae_vehiculo = parse_trae_vehiculo(data.get('trae_vehiculo') if isinstance(data, dict) else None)
         if trae_vehiculo is None:
             return jsonify({
                 'ok': False,
-                'error': 'Debe seleccionar si asistirá con vehículo'
+                'error': 'Debe seleccionar si asistirá con vehículo',
+                'field': 'trae_vehiculo',
+                'code': 'required'
             }), 400
 
         # Normalizar valor en data para consistencia
         data['trae_vehiculo'] = trae_vehiculo
-        
-        # Validar campos requeridos
-        required_fields = ['id_evento', 'dependencia', 'puesto', 'grado', 'nombre_completo']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'ok': False,
-                    'error': f'El campo {field} es obligatorio'
-                }), 400
-        
-        # Validación condicional de vehículo
-        if trae_vehiculo:
-            vehiculo_fields = ['vehiculo_modelo', 'vehiculo_color', 'vehiculo_placas']
-            for field in vehiculo_fields:
-                if not data.get(field):
-                    return jsonify({
-                        'ok': False,
-                        'error': f'El campo {field} es obligatorio si trae vehículo'
-                    }), 400
-        
-        # Normalizar placas (mayúsculas, sin espacios ni guiones)
-        vehiculo_placas = data.get('vehiculo_placas', '')
-        if vehiculo_placas:
-            vehiculo_placas = vehiculo_placas.upper().replace(' ', '').replace('-', '')
+
+        try:
+            id_evento = parse_id_evento(data.get('id_evento'))
+            dependencia = require_text('dependencia', 255, 'dependencia')
+            puesto = require_text('puesto', 255, 'puesto')
+            grado = require_text('grado', 50, 'grado')
+            nombre_completo = require_text('nombre_completo', 255, 'nombre_completo')
+
+            allowed_grados = {'Dr.', 'Dra.', 'Mtro.', 'Mtra.', 'Lic.', 'Ing.', 'Arq.', 'Otro'}
+            if grado not in allowed_grados:
+                raise ValidationError('El campo grado es inválido', field='grado', code='invalid_choice')
+
+            vehiculo_modelo = optional_text('vehiculo_modelo', 100, 'vehiculo_modelo')
+            vehiculo_color = optional_text('vehiculo_color', 50, 'vehiculo_color')
+            vehiculo_placas_raw = optional_text('vehiculo_placas', 60, 'vehiculo_placas')
+
+            vehiculo_placas = None
+            if vehiculo_placas_raw:
+                vehiculo_placas = vehiculo_placas_raw.upper().replace(' ', '').replace('-', '')
+                if len(vehiculo_placas) > 20:
+                    raise ValidationError(
+                        'El campo vehiculo_placas excede el límite de 20 caracteres',
+                        field='vehiculo_placas',
+                        code='max_length',
+                        meta={'max': 20}
+                    )
+                if not re.fullmatch(r"[A-Z0-9]+", vehiculo_placas):
+                    raise ValidationError(
+                        'El campo vehiculo_placas contiene caracteres inválidos',
+                        field='vehiculo_placas',
+                        code='invalid_characters'
+                    )
+
+            if trae_vehiculo:
+                if not vehiculo_modelo:
+                    raise ValidationError('El campo vehiculo_modelo es obligatorio si trae vehículo', field='vehiculo_modelo', code='required')
+                if not vehiculo_color:
+                    raise ValidationError('El campo vehiculo_color es obligatorio si trae vehículo', field='vehiculo_color', code='required')
+                if not vehiculo_placas:
+                    raise ValidationError('El campo vehiculo_placas es obligatorio si trae vehículo', field='vehiculo_placas', code='required')
+            else:
+                vehiculo_modelo = None
+                vehiculo_color = None
+                vehiculo_placas = None
+
+        except ValidationError as ve:
+            payload = {'ok': False, 'error': ve.message}
+            if ve.field:
+                payload['field'] = ve.field
+            if ve.code:
+                payload['code'] = ve.code
+            if ve.meta:
+                payload.update(ve.meta)
+            return jsonify(payload), 400
         
         # Capturar información de la solicitud
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -224,15 +313,15 @@ def api_confirmacion():
                  ip, user_agent, confirmado_en)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """, (
-                data['id_evento'],
-                data['dependencia'],
-                data['puesto'],
-                data['grado'],
-                data['nombre_completo'],
+                id_evento,
+                dependencia,
+                puesto,
+                grado,
+                nombre_completo,
                 trae_vehiculo,
-                data.get('vehiculo_modelo') if trae_vehiculo else None,
-                data.get('vehiculo_color') if trae_vehiculo else None,
-                vehiculo_placas if trae_vehiculo else None,
+                vehiculo_modelo,
+                vehiculo_color,
+                vehiculo_placas,
                 ip_address,
                 user_agent
             ))
@@ -243,7 +332,7 @@ def api_confirmacion():
             cursor.close()
             conn.close()
             
-            logger.info(f"Confirmación registrada: {data['nombre_completo']} - Evento ID: {data['id_evento']}")
+            logger.info(f"Confirmación registrada: {nombre_completo} - Evento ID: {id_evento}")
             
             return jsonify({
                 'ok': True,
@@ -283,8 +372,8 @@ def api_confirmacion():
 def admin_login():
     """Login de administrador"""
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
         
         admin_user = os.getenv('ADMIN_USER', 'admin')
         admin_pass = os.getenv('ADMIN_PASSWORD', 'admin')

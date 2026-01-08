@@ -110,6 +110,123 @@
         errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    function getFieldLabel(field) {
+        const labels = {
+            dependencia: 'Dependencia',
+            puesto: 'Puesto',
+            grado: 'Grado',
+            nombre_completo: 'Nombre completo',
+            trae_vehiculo: '¿Asistirá con vehículo?',
+            vehiculo_modelo: 'Modelo del vehículo',
+            vehiculo_color: 'Color del vehículo',
+            vehiculo_placas: 'Placas del vehículo'
+        };
+        return labels[field] || field;
+    }
+
+    function getOrCreateInvalidFeedback(inputEl) {
+        if (!inputEl) return null;
+
+        // Radios: mostrar un mensaje para todo el grupo
+        if (inputEl.type === 'radio') {
+            const group = inputEl.closest('.mb-3');
+            if (!group) return null;
+            let feedback = group.querySelector('.invalid-feedback[data-for="trae_vehiculo"]');
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'invalid-feedback d-block';
+                feedback.setAttribute('data-for', 'trae_vehiculo');
+                group.appendChild(feedback);
+            }
+            return feedback;
+        }
+
+        let feedback = inputEl.parentElement ? inputEl.parentElement.querySelector(`.invalid-feedback[data-for="${inputEl.id}"]`) : null;
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.setAttribute('data-for', inputEl.id || inputEl.name || 'field');
+            inputEl.insertAdjacentElement('afterend', feedback);
+        }
+        return feedback;
+    }
+
+    function clearFieldErrors() {
+        const all = form.querySelectorAll('input, select, textarea');
+        all.forEach(el => {
+            el.classList.remove('is-invalid');
+            el.setCustomValidity('');
+        });
+        const feedbackEls = form.querySelectorAll('.invalid-feedback[data-for]');
+        feedbackEls.forEach(el => {
+            el.textContent = '';
+        });
+    }
+
+    function showFieldError(field, message) {
+        if (!field) {
+            showError(message);
+            return;
+        }
+
+        if (field === 'trae_vehiculo') {
+            traeVehiculoSi.classList.add('is-invalid');
+            traeVehiculoNo.classList.add('is-invalid');
+            const fb = getOrCreateInvalidFeedback(traeVehiculoSi);
+            if (fb) fb.textContent = message;
+            (fb || traeVehiculoSi).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        const input = document.getElementById(field) || form.querySelector(`[name="${field}"]`);
+        if (!input) {
+            showError(message);
+            return;
+        }
+
+        input.classList.add('is-invalid');
+        input.setCustomValidity(message);
+        const fb = getOrCreateInvalidFeedback(input);
+        if (fb) fb.textContent = message;
+        input.focus({ preventScroll: true });
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function friendlyApiMessage(result) {
+        if (!result) {
+            return { message: 'Por favor verifique los datos ingresados.' };
+        }
+
+        const field = result.field;
+        const code = result.code;
+        const label = field ? getFieldLabel(field) : null;
+
+        if (field && code) {
+            if (code === 'required') {
+                return { field, message: `Por favor complete: ${label}.` };
+            }
+            if (code === 'max_length') {
+                const max = result.max;
+                return { field, message: max ? `${label}: máximo ${max} caracteres.` : `${label}: el texto es demasiado largo.` };
+            }
+            if (code === 'invalid_choice') {
+                return { field, message: `Seleccione una opción válida en: ${label}.` };
+            }
+            if (code === 'invalid_characters') {
+                if (field === 'vehiculo_placas') {
+                    return { field, message: 'Placas: use solo letras y números (sin espacios ni guiones).' };
+                }
+                return { field, message: `${label}: contiene caracteres no permitidos.` };
+            }
+            if (code === 'invalid') {
+                return { field, message: `${label}: valor inválido.` };
+            }
+        }
+
+        // Fallback: no mostrar el error crudo si podemos “suavizarlo”
+        return { field, message: 'Por favor revise los campos marcados y vuelva a intentar.' };
+    }
+
     /**
      * Ocultar mensaje de error
      */
@@ -156,6 +273,8 @@
         if (traeVehiculoValue === 'si') {
             if (!vehiculoModelo.value.trim()) {
                 vehiculoModelo.classList.add('is-invalid');
+                const fb = getOrCreateInvalidFeedback(vehiculoModelo);
+                if (fb) fb.textContent = 'Por favor indique el modelo del vehículo.';
                 isValid = false;
             } else {
                 vehiculoModelo.classList.remove('is-invalid');
@@ -164,6 +283,8 @@
 
             if (!vehiculoColor.value.trim()) {
                 vehiculoColor.classList.add('is-invalid');
+                const fb = getOrCreateInvalidFeedback(vehiculoColor);
+                if (fb) fb.textContent = 'Por favor indique el color del vehículo.';
                 isValid = false;
             } else {
                 vehiculoColor.classList.remove('is-invalid');
@@ -172,6 +293,8 @@
 
             if (!vehiculoPlacas.value.trim()) {
                 vehiculoPlacas.classList.add('is-invalid');
+                const fb = getOrCreateInvalidFeedback(vehiculoPlacas);
+                if (fb) fb.textContent = 'Por favor capture las placas del vehículo.';
                 isValid = false;
             } else {
                 vehiculoPlacas.classList.remove('is-invalid');
@@ -190,10 +313,16 @@
         event.stopPropagation();
 
         hideError();
+        clearFieldErrors();
 
         // Validar formulario
         if (!validateForm()) {
-            showError('Por favor complete todos los campos requeridos correctamente.');
+            showError('Revise los campos marcados en rojo e intente nuevamente.');
+            const firstInvalid = form.querySelector('.is-invalid, :invalid');
+            if (firstInvalid && firstInvalid.focus) {
+                firstInvalid.focus({ preventScroll: true });
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
@@ -244,10 +373,15 @@
                 
                 if (response.status === 409) {
                     // Error de duplicado
-                    showError(result.error || 'Ya existe una confirmación registrada con estos datos.');
+                    showError('Ya existe una confirmación registrada con estos datos para este evento. Si cree que es un error, verifique el nombre y la dependencia.');
                 } else if (response.status === 400) {
                     // Error de validación
-                    showError(result.error || 'Por favor verifique los datos ingresados.');
+                    const friendly = friendlyApiMessage(result);
+                    if (friendly.field) {
+                        showFieldError(friendly.field, friendly.message);
+                    } else {
+                        showError(friendly.message);
+                    }
                 } else {
                     // Otro error
                     showError(result.error || 'Ocurrió un error al procesar su confirmación. Por favor intente nuevamente.');
@@ -268,9 +402,28 @@
         input.addEventListener('input', function() {
             if (this.classList.contains('is-invalid')) {
                 this.classList.remove('is-invalid');
+                this.setCustomValidity('');
+                const fb = getOrCreateInvalidFeedback(this);
+                if (fb) fb.textContent = '';
             }
             hideError();
         });
+    });
+
+    // Limpiar error del radio al cambiar selección
+    traeVehiculoSi.addEventListener('change', function() {
+        traeVehiculoSi.classList.remove('is-invalid');
+        traeVehiculoNo.classList.remove('is-invalid');
+        const fb = getOrCreateInvalidFeedback(traeVehiculoSi);
+        if (fb) fb.textContent = '';
+        hideError();
+    });
+    traeVehiculoNo.addEventListener('change', function() {
+        traeVehiculoSi.classList.remove('is-invalid');
+        traeVehiculoNo.classList.remove('is-invalid');
+        const fb = getOrCreateInvalidFeedback(traeVehiculoSi);
+        if (fb) fb.textContent = '';
+        hideError();
     });
 
 })();

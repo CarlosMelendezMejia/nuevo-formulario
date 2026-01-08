@@ -71,14 +71,14 @@
                             <label for="dependencia" class="form-label">
                                 Dependencia <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="dependencia" name="dependencia" required>
+                            <input type="text" class="form-control" id="dependencia" name="dependencia" maxlength="255" required>
                         </div>
 
                         <div class="col-md-6">
                             <label for="puesto" class="form-label">
                                 Puesto <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="puesto" name="puesto" required>
+                            <input type="text" class="form-control" id="puesto" name="puesto" maxlength="255" required>
                         </div>
                     </div>
 
@@ -105,7 +105,7 @@
                                 Nombre Completo <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" 
-                                   placeholder="Sin incluir el grado" required>
+                                   placeholder="Sin incluir el grado" maxlength="255" required>
                         </div>
                     </div>
 
@@ -143,7 +143,7 @@
                                     Modelo del Vehículo <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" id="vehiculo_modelo" 
-                                       name="vehiculo_modelo" placeholder="Ej: Toyota Corolla 2020">
+                                       name="vehiculo_modelo" placeholder="Ej: Toyota Corolla 2020" maxlength="100">
                             </div>
 
                             <div class="col-md-6">
@@ -151,7 +151,7 @@
                                     Color del Vehículo <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" id="vehiculo_color" 
-                                       name="vehiculo_color" placeholder="Ej: Blanco">
+                                       name="vehiculo_color" placeholder="Ej: Blanco" maxlength="50">
                             </div>
                         </div>
 
@@ -161,6 +161,7 @@
                             </label>
                             <input type="text" class="form-control" id="vehiculo_placas" 
                                    name="vehiculo_placas" placeholder="Ej: ABC-123-D" 
+                                   maxlength="20" autocapitalize="characters" autocomplete="off"
                                    style="text-transform: uppercase;">
                             <small class="text-muted">Las placas se guardarán en mayúsculas sin espacios ni guiones</small>
                         </div>
