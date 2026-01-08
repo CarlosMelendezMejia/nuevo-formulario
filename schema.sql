@@ -53,10 +53,10 @@ CREATE TABLE IF NOT EXISTS confirmacion_asistencia (
 INSERT INTO evento (slug, titulo, fecha_inicio, fecha_fin, lugar, activo) 
 VALUES (
     'informe-gestion-2025',
-    'Primer Informe de Gestión 2025',
+    'Primer Informe de Gestión 2024 - 2028 FES Aragón',
     '2025-02-15 10:00:00',
     '2025-02-15 14:00:00',
-    'Auditorio Principal FES Aragón',
+    'Teatro Jose Vasconcelos FES Aragón',
     1
 ) ON DUPLICATE KEY UPDATE slug=slug;
 
