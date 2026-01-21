@@ -27,10 +27,12 @@
         <div class="container">
             <div class="d-flex align-items-center">
                 <a class="header-logos" href="{{ url_for('index') }}" aria-label="Inicio">
-                    <img src="{{ url_for('static', filename='img/logos.png') }}" alt="Logos institucionales">
+                    <img src="{{ url_for('static', filename='img/logos1.png') }}" alt="Logos institucionales">
                 </a>
-                <h1 class="h4 mb-0 text-center flex-grow-1">Confirmación de Asistencia a Evento FES Aragón</h1>
-                <div class="header-logos-spacer" aria-hidden="true"></div>
+                <h1 class="h4 mb-0 text-center flex-grow-1">Confirmación de Asistencia<br>FES Aragón</h1>
+                <div class="header-logos" aria-hidden="true">
+                    <img src="{{ url_for('static', filename='img/logos2.png') }}" alt="" role="presentation">
+                </div>
             </div>
         </div>
     </header>
