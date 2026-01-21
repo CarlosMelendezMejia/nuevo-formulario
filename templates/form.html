@@ -16,6 +16,18 @@
                 <h2 class="h5 mb-0 fw-bold">{{ evento.titulo }}</h2>
             </div>
             <div class="card-body">
+                <div class="card border-top-c2 shadow-sm mb-4 event-poster-frame">
+                    <div class="card-header bg-c2 text-dark">
+                        <h3 class="h6 mb-0 fw-bold">Cartel del evento</h3>
+                    </div>
+                    <div class="card-body">
+                        <img
+                            src="{{ url_for('static', filename='img/cartel_evento.jpeg') }}"
+                            class="img-fluid rounded border event-poster-img"
+                            alt="Cartel de invitación al evento: {{ evento.titulo|e }}">
+                    </div>
+                </div>
+
                 <div class="mb-4">
                     <h3 class="h6 text-c3 fw-semibold mb-2">Bienvenida(o)</h3>
                     <p class="text-muted mb-2">
@@ -31,8 +43,12 @@
                 <div class="alert alert-info mb-4">
                     {% if evento.fecha_inicio %}
                     <p class="mb-1">
-                        <strong>Fecha:</strong> 
-                        {{ evento.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}
+                        <strong>Fecha:</strong>
+                        {{ evento.fecha_inicio.strftime('%d/%m/%Y') }}
+                    </p>
+                    <p class="{{ 'mb-1' if evento_ubicacion_nombre else 'mb-0' }}">
+                        <strong>Hora:</strong>
+                        {{ evento.fecha_inicio.strftime('%H:%M') }}
                         {% if evento.fecha_fin %}
                         - {{ evento.fecha_fin.strftime('%H:%M') }}
                         {% endif %}
@@ -117,9 +133,10 @@
 
                     <div class="row mb-3">
                         <div class="col-md-12">
-                            <label for="email" class="form-label">
+                            <label for="email" class="form-label fw-bold">
                                 Correo electrónico <span class="text-danger">*</span>
-                            </label>
+                            </label><br>
+                            <small class="text-muted">Le solicitamos proporcionar una dirección de correo electrónico válida. Este medio será el canal oficial para el envío de notificaciones sobre el evento, así como para compartir información relevante acerca de futuras actividades institucionales.</small>
                             <input type="email" class="form-control" id="email" name="email"
                                    placeholder="nombre@dominio.com" maxlength="254" required
                                    autocomplete="email" inputmode="email">
