@@ -28,16 +28,32 @@
     // Inicialización del mapa (Leaflet) si existe el contenedor
     const mapEl = document.getElementById('map');
     if (mapEl && window.L) {
-        // 1. Inicialización del mapa con las coordenadas de la FES Aragón
-        const map = L.map('map').setView([19.4745, -99.0455], 16);
+        const parseNumber = (value) => {
+            if (value === null || value === undefined) return null;
+            const text = String(value).trim();
+            if (!text) return null;
+            const n = Number(text);
+            return Number.isFinite(n) ? n : null;
+        };
+
+        const locationLat = parseNumber(mapEl.getAttribute('data-location-lat'));
+        const locationLng = parseNumber(mapEl.getAttribute('data-location-lng'));
+        const locationName = (mapEl.getAttribute('data-location-name') || '').trim();
+        const eventTitle = (mapEl.getAttribute('data-event-title') || '').trim();
+
+        const fallbackCenter = [19.4745, -99.0455];
+        const hasLocation = locationLat !== null && locationLng !== null;
+        const markerCoords = hasLocation ? [locationLat, locationLng] : fallbackCenter;
+
+        // 1. Inicialización del mapa con las coordenadas del evento (o fallback FES Aragón)
+        const map = L.map('map').setView(markerCoords, hasLocation ? 17 : 16);
 
         // 2. Capa de tiles de OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // 3. Marcador: Teatro José Vasconcelos (lugar del evento)
-        const teatroCoords = [19.47629921397388, -99.04625437787124];
+        // 3. Marcador: ubicación del evento
         const iconUrl = mapEl.getAttribute('data-teatro-icon-url');
         const teatroIcon = iconUrl
             ? L.icon({
@@ -49,13 +65,28 @@
             : undefined;
 
         const markerOptions = teatroIcon ? { icon: teatroIcon } : undefined;
-        L.marker(teatroCoords, markerOptions)
+
+        const popupTitle = locationName || 'Ubicación del evento';
+        const popupSubtitle = eventTitle ? `<br><small>${escapeHtml(eventTitle)}</small>` : '';
+        const popupBody = `<strong>${escapeHtml(popupTitle)}</strong>${popupSubtitle}`;
+
+        L.marker(markerCoords, markerOptions)
             .addTo(map)
-            .bindPopup('<strong>Teatro José Vasconcelos</strong><br>FES Aragón')
+            .bindPopup(popupBody)
             .openPopup();
 
         // Asegurar render correcto si el contenedor se calcula tarde
         setTimeout(() => map.invalidateSize(), 0);
+    }
+
+    function escapeHtml(value) {
+        const text = value === null || value === undefined ? '' : String(value);
+        return text
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 
     // Campos de vehículo

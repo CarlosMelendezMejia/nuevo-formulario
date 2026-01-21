@@ -12,12 +12,20 @@ CREATE TABLE IF NOT EXISTS evento (
     titulo VARCHAR(255) NOT NULL COMMENT 'Título del evento',
     fecha_inicio DATETIME NULL COMMENT 'Fecha y hora de inicio del evento',
     fecha_fin DATETIME NULL COMMENT 'Fecha y hora de fin del evento',
-    lugar VARCHAR(255) NULL COMMENT 'Lugar donde se realizará el evento',
+    lugar VARCHAR(255) NULL COMMENT 'Lugar (legacy). Se recomienda usar ubicacion_*',
+
+    -- Ubicación predefinida (requerida)
+    ubicacion_key VARCHAR(50) NOT NULL COMMENT 'Identificador interno de ubicación predefinida',
+    ubicacion_nombre VARCHAR(255) NOT NULL COMMENT 'Nombre de la ubicación predefinida',
+    ubicacion_lat DECIMAL(10,8) NOT NULL COMMENT 'Latitud de la ubicación del evento',
+    ubicacion_lng DECIMAL(11,8) NOT NULL COMMENT 'Longitud de la ubicación del evento',
+
     activo BOOLEAN DEFAULT 0 COMMENT 'Solo puede haber un evento activo a la vez',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_slug (slug),
-    INDEX idx_activo (activo)
+    INDEX idx_activo (activo),
+    INDEX idx_ubicacion_key (ubicacion_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla de confirmaciones de asistencia
@@ -50,13 +58,22 @@ CREATE TABLE IF NOT EXISTS confirmacion_asistencia (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insertar evento de ejemplo (opcional)
-INSERT INTO evento (slug, titulo, fecha_inicio, fecha_fin, lugar, activo) 
+INSERT INTO evento (
+    slug, titulo, fecha_inicio, fecha_fin,
+    lugar,
+    ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+    activo
+) 
 VALUES (
     'informe-gestion-2025',
     'Primer Informe de Gestión 2024 - 2028 FES Aragón',
     '2025-02-15 10:00:00',
     '2025-02-15 14:00:00',
     'Teatro Jose Vasconcelos FES Aragón',
+    'teatro-jose-vasconcelos',
+    'Teatro José Vasconcelos',
+    19.47639643,
+    -99.04633426,
     1
 ) ON DUPLICATE KEY UPDATE slug=slug;
 

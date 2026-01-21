@@ -26,7 +26,8 @@
                     </p>
                 </div>
 
-                {% if evento.fecha_inicio or evento.lugar %}
+                {% set evento_ubicacion_nombre = evento.ubicacion_nombre or evento.lugar %}
+                {% if evento.fecha_inicio or evento_ubicacion_nombre %}
                 <div class="alert alert-info mb-4">
                     {% if evento.fecha_inicio %}
                     <p class="mb-1">
@@ -37,20 +38,24 @@
                         {% endif %}
                     </p>
                     {% endif %}
-                    {% if evento.lugar %}
-                    <p class="mb-0"><strong>Lugar:</strong> {{ evento.lugar }}</p>
+                    {% if evento_ubicacion_nombre %}
+                    <p class="mb-0"><strong>Ubicación:</strong> {{ evento_ubicacion_nombre }}</p>
                     {% endif %}
                 </div>
                 {% endif %}
 
                 <div class="card border-top-c2 shadow-sm mb-4">
                     <div class="card-header bg-c2 text-dark">
-                        <h3 class="h6 mb-0 fw-bold">Ubicación: FES Aragón</h3>
+                        <h3 class="h6 mb-0 fw-bold">Ubicación: {{ evento_ubicacion_nombre or 'FES Aragón' }}</h3>
                     </div>
                     <div class="card-body p-0">
                         <div id="map"
                              aria-label="Mapa de ubicación FES Aragón"
-                             data-teatro-icon-url="{{ url_for('static', filename='img/teatro-jose-vasconcelos-marker.svg') }}"></div>
+                             data-teatro-icon-url="{{ url_for('static', filename='img/teatro-jose-vasconcelos-marker.svg') }}"
+                             data-event-title="{{ evento.titulo|e }}"
+                             data-location-name="{{ evento_ubicacion_nombre|default('', true)|e }}"
+                             data-location-lat="{{ evento.ubicacion_lat|default('', true) }}"
+                             data-location-lng="{{ evento.ubicacion_lng|default('', true) }}"></div>
                     </div>
                 </div>
 

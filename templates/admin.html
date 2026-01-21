@@ -92,9 +92,13 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label for="lugar" class="form-label">Lugar</label>
-                    <input type="text" class="form-control" id="lugar" name="lugar" 
-                           placeholder="Auditorio Principal">
+                    <label for="ubicacion_key" class="form-label">Ubicación <span class="text-danger">*</span></label>
+                    <select class="form-select" id="ubicacion_key" name="ubicacion_key" required>
+                        <option value="">Seleccione...</option>
+                        {% for u in ubicaciones %}
+                        <option value="{{ u.key }}">{{ u.nombre }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
 
@@ -125,7 +129,7 @@
                         <th>Slug</th>
                         <th>Título</th>
                         <th>Fecha Inicio</th>
-                        <th>Lugar</th>
+                        <th>Ubicación</th>
                         <th>Estado</th>
                         <th>Confirmaciones</th>
                         <th>Acciones</th>
@@ -144,7 +148,7 @@
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>{{ evento.lugar or '-' }}</td>
+                        <td>{{ evento.ubicacion_nombre or evento.lugar or '-' }}</td>
                         <td>
                             {% if evento.activo %}
                             <span class="badge bg-success">Activo</span>

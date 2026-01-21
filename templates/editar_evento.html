@@ -56,9 +56,13 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label for="lugar" class="form-label">Lugar</label>
-                        <input type="text" class="form-control" id="lugar" name="lugar"
-                               value="{{ evento.lugar or '' }}" placeholder="Teatro José Vasconcelos">
+                        <label for="ubicacion_key" class="form-label">Ubicación <span class="text-danger">*</span></label>
+                        <select class="form-select" id="ubicacion_key" name="ubicacion_key" required>
+                            <option value="">Seleccione...</option>
+                            {% for u in ubicaciones %}
+                            <option value="{{ u.key }}" {% if evento.ubicacion_key == u.key %}selected{% endif %}>{{ u.nombre }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
 

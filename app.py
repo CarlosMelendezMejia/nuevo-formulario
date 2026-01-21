@@ -31,6 +31,43 @@ app = Flask(__name__)
 # Soportar tanto SECRET_KEY como FLASK_SECRET_KEY para compatibilidad
 app.secret_key = os.getenv('SECRET_KEY') or os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
 
+# Ubicaciones predefinidas (requeridas para eventos)
+PREDEFINED_LOCATIONS = {
+    'teatro-jose-vasconcelos': {
+        'nombre': 'Teatro José Vasconcelos',
+        'lat': 19.476396427168083,
+        'lng': -99.04633425890201,
+    },
+    'duacyd': {
+        'nombre': 'DUACyD',
+        'lat': 19.47446595918309,
+        'lng': -99.04368228623203,
+    },
+    'gimnasio-parquet': {
+        'nombre': 'Gimnasio de Parquet',
+        'lat': 19.474965205436593,
+        'lng': -99.04218644726495,
+    },
+    'centro-tecnologico-aragon': {
+        'nombre': 'Centro Tecnológico Aragón',
+        'lat': 19.473643812212256,
+        'lng': -99.04651282145399,
+    },
+}
+
+
+def list_predefined_locations():
+    """Lista de ubicaciones para UI (admin)."""
+    return [
+        {
+            'key': key,
+            'nombre': value['nombre'],
+            'lat': value['lat'],
+            'lng': value['lng'],
+        }
+        for key, value in PREDEFINED_LOCATIONS.items()
+    ]
+
 # Configuración de base de datos
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', '127.0.0.1'),
@@ -485,7 +522,8 @@ def admin_panel():
                              eventos=eventos, 
                              confirmaciones=confirmaciones,
                              selected_evento=selected_evento,
-                             selected_slug=selected_slug)
+                             selected_slug=selected_slug,
+                             ubicaciones=list_predefined_locations())
         
     except Exception as e:
         logger.error(f"Error en admin_panel: {e}")
@@ -502,13 +540,25 @@ def crear_evento():
         titulo = request.form.get('titulo', '').strip()
         fecha_inicio = request.form.get('fecha_inicio') or None
         fecha_fin = request.form.get('fecha_fin') or None
-        lugar = request.form.get('lugar', '').strip() or None
+        ubicacion_key = (request.form.get('ubicacion_key') or '').strip()
         activo = request.form.get('activo') == 'on'
         
         # Validación
         if not slug or not titulo:
             flash('El slug y el título son obligatorios', 'danger')
             return redirect(url_for('admin_panel'))
+
+        if not ubicacion_key or ubicacion_key not in PREDEFINED_LOCATIONS:
+            flash('Debe seleccionar una ubicación válida para el evento', 'danger')
+            return redirect(url_for('admin_panel'))
+
+        ubicacion = PREDEFINED_LOCATIONS[ubicacion_key]
+        ubicacion_nombre = ubicacion['nombre']
+        ubicacion_lat = ubicacion['lat']
+        ubicacion_lng = ubicacion['lng']
+
+        # Mantener lugar para compatibilidad / display legacy
+        lugar = ubicacion_nombre
         
         conn = db_conn()
         cursor = conn.cursor()
@@ -519,9 +569,19 @@ def crear_evento():
         
         # Insertar evento
         cursor.execute("""
-            INSERT INTO evento (slug, titulo, fecha_inicio, fecha_fin, lugar, activo)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (slug, titulo, fecha_inicio, fecha_fin, lugar, activo))
+            INSERT INTO evento (
+                slug, titulo, fecha_inicio, fecha_fin,
+                lugar,
+                ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+                activo
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            slug, titulo, fecha_inicio, fecha_fin,
+            lugar,
+            ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+            activo
+        ))
         
         conn.commit()
         cursor.close()
@@ -563,14 +623,14 @@ def editar_evento(evento_id):
         if request.method == 'GET':
             cursor.close()
             conn.close()
-            return render_template('editar_evento.html', evento=evento)
+            return render_template('editar_evento.html', evento=evento, ubicaciones=list_predefined_locations())
 
         # POST: actualizar
         slug = (request.form.get('slug') or '').strip()
         titulo = (request.form.get('titulo') or '').strip()
         fecha_inicio = request.form.get('fecha_inicio') or None
         fecha_fin = request.form.get('fecha_fin') or None
-        lugar = (request.form.get('lugar') or '').strip() or None
+        ubicacion_key = (request.form.get('ubicacion_key') or '').strip()
         activo = request.form.get('activo') == 'on'
 
         if not slug or not titulo:
@@ -584,6 +644,20 @@ def editar_evento(evento_id):
             conn.close()
             flash('Slug inválido. Usa solo minúsculas, números y guiones.', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
+
+        if not ubicacion_key or ubicacion_key not in PREDEFINED_LOCATIONS:
+            cursor.close()
+            conn.close()
+            flash('Debe seleccionar una ubicación válida para el evento', 'danger')
+            return redirect(url_for('editar_evento', evento_id=evento_id))
+
+        ubicacion = PREDEFINED_LOCATIONS[ubicacion_key]
+        ubicacion_nombre = ubicacion['nombre']
+        ubicacion_lat = ubicacion['lat']
+        ubicacion_lng = ubicacion['lng']
+
+        # Mantener lugar para compatibilidad / display legacy
+        lugar = ubicacion_nombre
 
         # Si se marca activo, desactivar todos los demás
         cursor2 = conn.cursor()
@@ -599,10 +673,18 @@ def editar_evento(evento_id):
                     fecha_inicio = %s,
                     fecha_fin = %s,
                     lugar = %s,
+                    ubicacion_key = %s,
+                    ubicacion_nombre = %s,
+                    ubicacion_lat = %s,
+                    ubicacion_lng = %s,
                     activo = %s
                 WHERE id = %s
                 """,
-                (slug, titulo, fecha_inicio, fecha_fin, lugar, activo, evento_id)
+                (
+                    slug, titulo, fecha_inicio, fecha_fin, lugar,
+                    ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+                    activo, evento_id
+                )
             )
 
             conn.commit()
