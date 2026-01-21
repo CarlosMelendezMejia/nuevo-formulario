@@ -33,6 +33,7 @@
                             <th>Dependencia</th>
                             <th>Puesto</th>
                             <th>Grado y Nombre</th>
+                            <th>Correo</th>
                             <th>Vehículo</th>
                             <th>Modelo</th>
                             <th>Color</th>
@@ -54,6 +55,7 @@
                             <td>{{ conf.dependencia }}</td>
                             <td>{{ conf.puesto }}</td>
                             <td><strong>{{ conf.grado }} {{ conf.nombre_completo }}</strong></td>
+                            <td>{{ conf.email or '-' }}</td>
                             <td class="text-center">
                                 {% if conf.trae_vehiculo %}
                                 <span class="badge bg-info">Sí</span>

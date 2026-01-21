@@ -20,8 +20,10 @@
     const gradoOtroWrap = document.getElementById('grado_otro_wrap');
     const gradoOtroInput = document.getElementById('grado_otro');
 
+    const emailInput = document.getElementById('email');
+
     // Si este script se carga en una página sin el formulario, salir sin romper.
-    if (!form || !traeVehiculoSi || !traeVehiculoNo || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage || !gradoSelect) {
+    if (!form || !traeVehiculoSi || !traeVehiculoNo || !vehiculoFields || !submitBtn || !submitText || !submitSpinner || !errorMessage || !gradoSelect || !emailInput) {
         return;
     }
 
@@ -175,6 +177,7 @@
             grado: 'Grado',
             grado_otro: 'Grado (otro)',
             nombre_completo: 'Nombre completo',
+            email: 'Correo electrónico',
             trae_vehiculo: '¿Asistirá con vehículo?',
             vehiculo_modelo: 'Modelo del vehículo',
             vehiculo_color: 'Color del vehículo',
@@ -281,6 +284,9 @@
                 return { field, message: `${label}: contiene caracteres no permitidos.` };
             }
             if (code === 'invalid') {
+                if (field === 'email') {
+                    return { field, message: 'Por favor capture un correo válido (ej: nombre@dominio.com).' };
+                }
                 return { field, message: `${label}: valor inválido.` };
             }
         }
@@ -317,6 +323,28 @@
      */
     function validateForm() {
         let isValid = true;
+
+        // Email: sanitizar (sin espacios) + validar con regex sencilla
+        const rawEmail = (emailInput.value || '').trim();
+        const sanitizedEmail = rawEmail.replace(/\s+/g, '');
+        if (rawEmail !== sanitizedEmail) {
+            emailInput.value = sanitizedEmail;
+        }
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(sanitizedEmail);
+        if (!sanitizedEmail) {
+            emailInput.classList.add('is-invalid');
+            const fb = getOrCreateInvalidFeedback(emailInput);
+            if (fb) fb.textContent = 'Por favor capture su correo electrónico.';
+            isValid = false;
+        } else if (!emailOk) {
+            emailInput.classList.add('is-invalid');
+            const fb = getOrCreateInvalidFeedback(emailInput);
+            if (fb) fb.textContent = 'Por favor capture un correo válido (ej: nombre@dominio.com).';
+            isValid = false;
+        } else {
+            emailInput.classList.remove('is-invalid');
+            emailInput.classList.add('is-valid');
+        }
 
         // Validación de Bootstrap
         if (!form.checkValidity()) {
@@ -422,6 +450,11 @@
         // Convertir respuesta Sí/No a boolean (obligatorio)
         const traeVehiculoValue = getTraeVehiculoValue();
         data.trae_vehiculo = traeVehiculoValue === 'si' ? true : (traeVehiculoValue === 'no' ? false : null);
+
+        // Normalizar email antes de enviar
+        if (typeof data.email === 'string') {
+            data.email = data.email.trim().replace(/\s+/g, '').toLowerCase();
+        }
 
         // Si no trae vehículo, asegurar que los campos están vacíos
         if (data.trae_vehiculo !== true) {

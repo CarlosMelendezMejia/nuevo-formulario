@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS confirmacion_asistencia (
     puesto VARCHAR(255) NOT NULL COMMENT 'Puesto que ocupa',
     grado VARCHAR(50) NOT NULL COMMENT 'Grado académico: Dr., Dra., Mtro., Mtra., Lic., Ing., Arq., Otro',
     nombre_completo VARCHAR(255) NOT NULL COMMENT 'Nombre completo sin incluir el grado',
+    email VARCHAR(254) NULL COMMENT 'Correo electrónico del encuestado (normalizado a minúsculas)',
     trae_vehiculo BOOLEAN DEFAULT 0 COMMENT 'Indica si asistirá con vehículo',
     vehiculo_modelo VARCHAR(100) NULL COMMENT 'Modelo del vehículo',
     vehiculo_color VARCHAR(50) NULL COMMENT 'Color del vehículo',

@@ -238,6 +238,33 @@ def api_confirmacion():
                 )
             return value
 
+        EMAIL_REGEX = re.compile(
+            r"^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@"
+            r"[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?"
+            r"(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$",
+            re.IGNORECASE,
+        )
+
+        def require_email(field='email', max_len=254, label='correo electrónico'):
+            raw = data.get(field)
+            if raw is None:
+                raise ValidationError(f'El campo {label} es obligatorio', field=field, code='required')
+            email = str(raw).strip().lower()
+            # Sanitización: eliminar cualquier whitespace (pega con espacios, saltos de línea, etc.)
+            email = re.sub(r"\s+", "", email)
+            if not email:
+                raise ValidationError(f'El campo {label} es obligatorio', field=field, code='required')
+            if len(email) > max_len:
+                raise ValidationError(
+                    f'El campo {label} excede el límite de {max_len} caracteres',
+                    field=field,
+                    code='max_length',
+                    meta={'max': max_len}
+                )
+            if not EMAIL_REGEX.fullmatch(email):
+                raise ValidationError(f'El campo {label} es inválido', field=field, code='invalid')
+            return email
+
         def parse_id_evento(value):
             value = normalize_text(value)
             if not value or not value.isdigit():
@@ -286,6 +313,7 @@ def api_confirmacion():
             puesto = require_text('puesto', 255, 'puesto')
             grado = require_text('grado', 50, 'grado')
             nombre_completo = require_text('nombre_completo', 255, 'nombre_completo')
+            email = require_email('email', 254, 'correo electrónico')
 
             allowed_grados = {'Dr.', 'Dra.', 'Mtro.', 'Mtra.', 'Lic.', 'Ing.', 'Arq.', 'Otro'}
             if grado not in allowed_grados:
@@ -352,16 +380,17 @@ def api_confirmacion():
         try:
             cursor.execute("""
                 INSERT INTO confirmacion_asistencia 
-                (id_evento, dependencia, puesto, grado, nombre_completo,
+                (id_evento, dependencia, puesto, grado, nombre_completo, email,
                  trae_vehiculo, vehiculo_modelo, vehiculo_color, vehiculo_placas,
                  ip, user_agent, confirmado_en)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """, (
                 id_evento,
                 dependencia,
                 puesto,
                 grado,
                 nombre_completo,
+                email,
                 trae_vehiculo,
                 vehiculo_modelo,
                 vehiculo_color,
@@ -791,6 +820,7 @@ def export_csv():
                 c.puesto,
                 c.grado,
                 c.nombre_completo,
+                c.email,
                 c.trae_vehiculo,
                 c.vehiculo_modelo,
                 c.vehiculo_color,
@@ -815,7 +845,7 @@ def export_csv():
         # Encabezados
         writer.writerow([
             'Slug', 'Título Evento', 'Dependencia', 'Puesto', 'Grado', 
-            'Nombre Completo', 'Trae Vehículo', 'Modelo', 'Color', 'Placas',
+            'Nombre Completo', 'Correo', 'Trae Vehículo', 'Modelo', 'Color', 'Placas',
             'Confirmado En', 'Creado En'
         ])
         
@@ -828,6 +858,7 @@ def export_csv():
                 c['puesto'],
                 c['grado'],
                 c['nombre_completo'],
+                c.get('email') or '',
                 'Sí' if c['trae_vehiculo'] else 'No',
                 c['vehiculo_modelo'] or '',
                 c['vehiculo_color'] or '',

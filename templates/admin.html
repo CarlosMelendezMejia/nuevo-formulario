@@ -230,6 +230,7 @@
                         <th>Puesto</th>
                         <th>Grado</th>
                         <th>Nombre</th>
+                        <th>Correo</th>
                         <th>Vehículo</th>
                         <th>Modelo</th>
                         <th>Color</th>
@@ -244,6 +245,7 @@
                         <td>{{ conf.puesto }}</td>
                         <td>{{ conf.grado }}</td>
                         <td>{{ conf.nombre_completo }}</td>
+                        <td>{{ conf.email or '-' }}</td>
                         <td>
                             {% if conf.trae_vehiculo %}
                             <span class="badge bg-info">Sí</span>
