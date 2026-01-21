@@ -39,7 +39,7 @@ PREDEFINED_LOCATIONS = {
         'lng': -99.04633425890201,
     },
     'duacyd': {
-        'nombre': 'DUACyD',
+        'nombre': 'Auditorio DUACyD',
         'lat': 19.47446595918309,
         'lng': -99.04368228623203,
     },
