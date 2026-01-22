@@ -3,9 +3,8 @@
 {% block title %}Confirmación de Asistencia - {{ evento.titulo }}{% endblock %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 {% endblock %}
 
 {% block content %}
@@ -16,17 +15,16 @@
                 <h2 class="h5 mb-0 fw-bold">{{ evento.titulo }}</h2>
             </div>
             <div class="card-body">
-                <div class="card border-top-c2 shadow-sm mb-4 event-poster-frame">
+                <!-- <div class="card border-top-c2 shadow-sm mb-4 event-poster-frame">
                     <div class="card-header bg-c2 text-dark">
                         <h3 class="h6 mb-0 fw-bold">Cartel del evento</h3>
                     </div>
                     <div class="card-body">
-                        <img
-                            src="{{ url_for('static', filename='img/cartel_evento.jpeg') }}"
+                        <img src="{{ url_for('static', filename='img/cartel_evento.jpeg') }}"
                             class="img-fluid rounded border event-poster-img"
                             alt="Cartel de invitación al evento: {{ evento.titulo|e }}">
                     </div>
-                </div>
+                </div> -->
 
                 <div class="mb-4">
                     <h3 class="h6 text-c3 fw-semibold mb-2">Bienvenida(o)</h3>
@@ -34,18 +32,30 @@
                         Le damos la más cordial bienvenida al formulario de confirmación de asistencia.
                     </p>
                     <p class="text-muted mb-0">
-                        Su registro nos permitirá organizar de manera adecuada el acceso, el control de asistentes y, en su caso, la logística de ingreso vehicular.
+                        Su registro nos permitirá organizar de manera adecuada el acceso, el control de asistentes y, en
+                        su caso, la logística de ingreso vehicular.
                     </p>
                 </div>
 
                 {% set evento_ubicacion_nombre = evento.ubicacion_nombre or evento.lugar %}
-                {% if evento.fecha_inicio or evento_ubicacion_nombre %}
+                {% set fecha_base = evento.fecha_inicio or evento.fecha_recepcion %}
+                {% if fecha_base or evento_ubicacion_nombre %}
                 <div class="alert alert-info mb-4">
-                    {% if evento.fecha_inicio %}
+                    {% if fecha_base %}
                     <p class="mb-1">
                         <strong>Fecha:</strong>
-                        {{ evento.fecha_inicio.strftime('%d/%m/%Y') }}
+                        {{ fecha_base.strftime('%d/%m/%Y') }}
                     </p>
+                    {% endif %}
+
+                    {% if evento.fecha_recepcion %}
+                    <p class="mb-1">
+                        <strong>Recepción:</strong>
+                        {{ evento.fecha_recepcion.strftime('%H:%M') }}
+                    </p>
+                    {% endif %}
+
+                    {% if evento.fecha_inicio %}
                     <p class="{{ 'mb-1' if evento_ubicacion_nombre else 'mb-0' }}">
                         <strong>Hora:</strong>
                         {{ evento.fecha_inicio.strftime('%H:%M') }}
@@ -65,13 +75,12 @@
                         <h3 class="h6 mb-0 fw-bold">Mapa FES Aragón</h3>
                     </div>
                     <div class="card-body p-0">
-                        <div id="map"
-                             aria-label="Mapa de ubicación FES Aragón"
-                             data-teatro-icon-url="{{ url_for('static', filename='img/teatro-jose-vasconcelos-marker.svg') }}"
-                             data-event-title="{{ evento.titulo|e }}"
-                             data-location-name="{{ evento_ubicacion_nombre|default('', true)|e }}"
-                             data-location-lat="{{ evento.ubicacion_lat|default('', true) }}"
-                             data-location-lng="{{ evento.ubicacion_lng|default('', true) }}"></div>
+                        <div id="map" aria-label="Mapa de ubicación FES Aragón"
+                            data-teatro-icon-url="{{ url_for('static', filename='img/teatro-jose-vasconcelos-marker.svg') }}"
+                            data-event-title="{{ evento.titulo|e }}"
+                            data-location-name="{{ evento_ubicacion_nombre|default('', true)|e }}"
+                            data-location-lat="{{ evento.ubicacion_lat|default('', true) }}"
+                            data-location-lng="{{ evento.ubicacion_lng|default('', true) }}"></div>
                     </div>
                 </div>
 
@@ -92,7 +101,8 @@
                             <label for="dependencia" class="form-label">
                                 Dependencia <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="dependencia" name="dependencia" maxlength="255" required>
+                            <input type="text" class="form-control" id="dependencia" name="dependencia" maxlength="255"
+                                required>
                         </div>
 
                         <div class="col-md-6">
@@ -126,8 +136,8 @@
                             <label for="nombre_completo" class="form-label">
                                 Nombre Completo <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="nombre_completo" name="nombre_completo" 
-                                   placeholder="Sin incluir el grado" maxlength="255" required>
+                            <input type="text" class="form-control" id="nombre_completo" name="nombre_completo"
+                                placeholder="Sin incluir el grado" maxlength="255" required>
                         </div>
                     </div>
 
@@ -136,10 +146,13 @@
                             <label for="email" class="form-label fw-bold">
                                 Correo electrónico <span class="text-danger">*</span>
                             </label><br>
-                            <small class="text-muted">Le solicitamos proporcionar una dirección de correo electrónico válida. Este medio será el canal oficial para el envío de notificaciones sobre el evento, así como para compartir información relevante acerca de futuras actividades institucionales.</small>
+                            <small class="text-muted">Le solicitamos proporcionar una dirección de correo electrónico
+                                válida. Este medio será el canal oficial para el envío de notificaciones sobre el
+                                evento, así como para compartir información relevante acerca de futuras actividades
+                                institucionales.</small>
                             <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="nombre@dominio.com" maxlength="254" required
-                                   autocomplete="email" inputmode="email">
+                                placeholder="nombre@dominio.com" maxlength="254" required autocomplete="email"
+                                inputmode="email">
                         </div>
                     </div>
 
@@ -149,7 +162,7 @@
                                 Especifique el grado <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control" id="grado_otro" name="grado_otro"
-                                   placeholder="abreviado" maxlength="20">
+                                placeholder="abreviado" maxlength="20">
                         </div>
                     </div>
 
@@ -159,16 +172,19 @@
                         <label class="form-label fw-bold d-block mb-2">
                             ¿Asistirá con vehículo? <span class="text-danger">*</span>
                         </label>
-                        <small class="text-muted">En caso de formar parte de la comunidad de FES Aragón y contar con tarjeta de proximidad, marque "No" y el ingreso con su vehículo será normal</small>
+                        <small class="text-muted">En caso de formar parte de la comunidad de FES Aragón y contar con
+                            tarjeta de proximidad, marque "No" y el ingreso con su vehículo será normal</small>
                         <div class="d-flex flex-column gap-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" id="trae_vehiculo_si" name="trae_vehiculo" value="si" required>
+                                <input class="form-check-input" type="radio" id="trae_vehiculo_si" name="trae_vehiculo"
+                                    value="si" required>
                                 <label class="form-check-label" for="trae_vehiculo_si">
                                     Sí, soy externo a FES Aragón y asistiré con vehículo
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" id="trae_vehiculo_no" name="trae_vehiculo" value="no">
+                                <input class="form-check-input" type="radio" id="trae_vehiculo_no" name="trae_vehiculo"
+                                    value="no">
                                 <label class="form-check-label" for="trae_vehiculo_no">
                                     No
                                 </label>
@@ -186,16 +202,16 @@
                                 <label for="vehiculo_modelo" class="form-label">
                                     Modelo del Vehículo <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="vehiculo_modelo" 
-                                       name="vehiculo_modelo" placeholder="Ej: Toyota Corolla 2020" maxlength="100">
+                                <input type="text" class="form-control" id="vehiculo_modelo" name="vehiculo_modelo"
+                                    placeholder="Ej: Toyota Corolla 2020" maxlength="100">
                             </div>
 
                             <div class="col-md-6">
                                 <label for="vehiculo_color" class="form-label">
                                     Color del Vehículo <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" class="form-control" id="vehiculo_color" 
-                                       name="vehiculo_color" placeholder="Ej: Blanco" maxlength="50">
+                                <input type="text" class="form-control" id="vehiculo_color" name="vehiculo_color"
+                                    placeholder="Ej: Blanco" maxlength="50">
                             </div>
                         </div>
 
@@ -203,18 +219,20 @@
                             <label for="vehiculo_placas" class="form-label">
                                 Placas del Vehículo <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="vehiculo_placas" 
-                                   name="vehiculo_placas" placeholder="Ej: ABC-123-D" 
-                                   maxlength="20" autocapitalize="characters" autocomplete="off"
-                                   style="text-transform: uppercase;">
-                            <small class="text-muted">Las placas se guardarán en mayúsculas sin espacios ni guiones</small>
+                            <input type="text" class="form-control" id="vehiculo_placas" name="vehiculo_placas"
+                                placeholder="Ej: ABC-123-D" maxlength="20" autocapitalize="characters"
+                                autocomplete="off" style="text-transform: uppercase;">
+                            <small class="text-muted">Las placas se guardarán en mayúsculas sin espacios ni
+                                guiones</small>
                         </div>
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                            <span id="submitText"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Confirmar Asistencia</span>
-                            <span id="submitSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status">
+                            <span id="submitText"><i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Confirmar
+                                Asistencia</span>
+                            <span id="submitSpinner" class="spinner-border spinner-border-sm ms-2"
+                                style="display: none;" role="status">
                                 <span class="visually-hidden">Procesando...</span>
                             </span>
                         </button>
@@ -228,7 +246,6 @@
 
 {% block extra_scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{{ url_for('static', filename='js/form.js') }}"></script>
 {% endblock %}

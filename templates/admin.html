@@ -81,17 +81,22 @@
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label for="fecha_recepcion" class="form-label">Hora Recepción</label>
+                    <input type="datetime-local" class="form-control" id="fecha_recepcion" name="fecha_recepcion">
+                </div>
+
+                <div class="col-md-3">
                     <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
                     <input type="datetime-local" class="form-control" id="fecha_inicio" name="fecha_inicio">
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="fecha_fin" class="form-label">Fecha Fin</label>
                     <input type="datetime-local" class="form-control" id="fecha_fin" name="fecha_fin">
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="ubicacion_key" class="form-label">Ubicación <span class="text-danger">*</span></label>
                     <select class="form-select" id="ubicacion_key" name="ubicacion_key" required>
                         <option value="">Seleccione...</option>

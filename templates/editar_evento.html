@@ -44,6 +44,12 @@
 
                 <div class="row mb-3">
                     <div class="col-md-4">
+                        <label for="fecha_recepcion" class="form-label">Hora Recepción</label>
+                        <input type="datetime-local" class="form-control" id="fecha_recepcion" name="fecha_recepcion"
+                               value="{{ evento.fecha_recepcion.strftime('%Y-%m-%dT%H:%M') if evento.fecha_recepcion else '' }}">
+                    </div>
+
+                    <div class="col-md-4">
                         <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
                         <input type="datetime-local" class="form-control" id="fecha_inicio" name="fecha_inicio"
                                value="{{ evento.fecha_inicio.strftime('%Y-%m-%dT%H:%M') if evento.fecha_inicio else '' }}">
@@ -54,8 +60,10 @@
                         <input type="datetime-local" class="form-control" id="fecha_fin" name="fecha_fin"
                                value="{{ evento.fecha_fin.strftime('%Y-%m-%dT%H:%M') if evento.fecha_fin else '' }}">
                     </div>
+                </div>
 
-                    <div class="col-md-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
                         <label for="ubicacion_key" class="form-label">Ubicación <span class="text-danger">*</span></label>
                         <select class="form-select" id="ubicacion_key" name="ubicacion_key" required>
                             <option value="">Seleccione...</option>

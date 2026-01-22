@@ -1,0 +1,2 @@
+-- NOTA: Este archivo es un duplicado y se deja solo como referencia.
+-- Use la migración: 003_add_fecha_recepcion.sql

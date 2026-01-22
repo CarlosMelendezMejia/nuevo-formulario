@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS evento (
     id INT AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(100) UNIQUE NOT NULL COMMENT 'Identificador único del evento para URLs',
     titulo VARCHAR(255) NOT NULL COMMENT 'Título del evento',
+    fecha_recepcion DATETIME NULL COMMENT 'Fecha y hora de recepción',
     fecha_inicio DATETIME NULL COMMENT 'Fecha y hora de inicio del evento',
     fecha_fin DATETIME NULL COMMENT 'Fecha y hora de fin del evento',
     lugar VARCHAR(255) NULL COMMENT 'Lugar (legacy). Se recomienda usar ubicacion_*',
@@ -60,16 +61,17 @@ CREATE TABLE IF NOT EXISTS confirmacion_asistencia (
 
 -- Insertar evento de ejemplo (opcional)
 INSERT INTO evento (
-    slug, titulo, fecha_inicio, fecha_fin,
+    slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
     lugar,
     ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
     activo
 ) 
 VALUES (
     'informe-gestion-2025',
-    'Primer Informe de Gestión 2024 - 2028 FES Aragón',
-    '2025-02-15 10:00:00',
-    '2025-02-15 14:00:00',
+    'Primer Informe de Gestión 2024 - 2025 / FES Aragón',
+    '2026-01-29 10:00:00',
+    '2026-01-29 11:00:00',
+    '2026-01-29 14:00:00',
     'Teatro Jose Vasconcelos FES Aragón',
     'teatro-jose-vasconcelos',
     'Teatro José Vasconcelos',

@@ -567,6 +567,7 @@ def crear_evento():
     try:
         slug = request.form.get('slug', '').strip()
         titulo = request.form.get('titulo', '').strip()
+        fecha_recepcion = request.form.get('fecha_recepcion') or None
         fecha_inicio = request.form.get('fecha_inicio') or None
         fecha_fin = request.form.get('fecha_fin') or None
         ubicacion_key = (request.form.get('ubicacion_key') or '').strip()
@@ -599,14 +600,14 @@ def crear_evento():
         # Insertar evento
         cursor.execute("""
             INSERT INTO evento (
-                slug, titulo, fecha_inicio, fecha_fin,
+                slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
                 lugar,
                 ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
                 activo
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            slug, titulo, fecha_inicio, fecha_fin,
+            slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
             lugar,
             ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
             activo
@@ -657,6 +658,7 @@ def editar_evento(evento_id):
         # POST: actualizar
         slug = (request.form.get('slug') or '').strip()
         titulo = (request.form.get('titulo') or '').strip()
+        fecha_recepcion = request.form.get('fecha_recepcion') or None
         fecha_inicio = request.form.get('fecha_inicio') or None
         fecha_fin = request.form.get('fecha_fin') or None
         ubicacion_key = (request.form.get('ubicacion_key') or '').strip()
@@ -699,6 +701,7 @@ def editar_evento(evento_id):
                 UPDATE evento
                 SET slug = %s,
                     titulo = %s,
+                    fecha_recepcion = %s,
                     fecha_inicio = %s,
                     fecha_fin = %s,
                     lugar = %s,
@@ -710,7 +713,7 @@ def editar_evento(evento_id):
                 WHERE id = %s
                 """,
                 (
-                    slug, titulo, fecha_inicio, fecha_fin, lugar,
+                    slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin, lugar,
                     ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
                     activo, evento_id
                 )
