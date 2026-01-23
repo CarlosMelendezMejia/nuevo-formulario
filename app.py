@@ -8,6 +8,7 @@ import io
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import re
+from contextlib import contextmanager
 from functools import wraps
 from datetime import datetime
 
@@ -196,6 +197,62 @@ def db_conn():
         raise
 
 
+@contextmanager
+def db_cursor(dictionary=False):
+    """Cursor protegido: siempre cierra cursor y devuelve conexión al pool."""
+    conn = None
+    cursor = None
+    try:
+        conn = db_conn()
+        cursor = conn.cursor(dictionary=dictionary)
+        yield conn, cursor
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                logger.exception("Error al cerrar cursor")
+        if conn is not None:
+            try:
+                conn.close()  # devuelve al pool
+            except Exception:
+                logger.exception("Error al cerrar conexión")
+
+
+@contextmanager
+def db_transaction(dictionary=False):
+    """Transacción protegida: commit/rollback y cierre seguro (pool)."""
+    conn = None
+    cursor = None
+    try:
+        conn = db_conn()
+        cursor = conn.cursor(dictionary=dictionary)
+        yield conn, cursor
+        try:
+            conn.commit()
+        except Exception:
+            logger.exception("Error al hacer commit")
+            raise
+    except Exception:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except Exception:
+                logger.exception("Error al hacer rollback")
+        raise
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                logger.exception("Error al cerrar cursor")
+        if conn is not None:
+            try:
+                conn.close()  # devuelve al pool
+            except Exception:
+                logger.exception("Error al cerrar conexión")
+
+
 # Decorador para rutas de administrador
 def admin_required(f):
     """Decorador para proteger rutas de administrador"""
@@ -216,20 +273,15 @@ def admin_required(f):
 def index():
     """Página principal - redirige al evento activo más reciente"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Buscar evento activo más reciente
-        cursor.execute("""
-            SELECT slug FROM evento 
-            WHERE activo = TRUE 
-            ORDER BY creado_en DESC 
-            LIMIT 1
-        """)
-        evento = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+        with db_cursor(dictionary=True) as (_, cursor):
+            # Buscar evento activo más reciente
+            cursor.execute("""
+                SELECT slug FROM evento 
+                WHERE activo = TRUE 
+                ORDER BY creado_en DESC 
+                LIMIT 1
+            """)
+            evento = cursor.fetchone()
         
         if evento:
             return redirect(url_for('evento_form', slug=evento['slug']))
@@ -237,7 +289,7 @@ def index():
             return render_template('no_event.html')
             
     except Exception as e:
-        logger.error(f"Error en index: {e}")
+        logger.exception("Error en index")
         return render_template('no_event.html')
 
 
@@ -245,18 +297,13 @@ def index():
 def evento_form(slug):
     """Formulario de confirmación para un evento específico"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Buscar evento por slug
-        cursor.execute("""
-            SELECT * FROM evento 
-            WHERE slug = %s AND activo = TRUE
-        """, (slug,))
-        evento = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+        with db_cursor(dictionary=True) as (_, cursor):
+            # Buscar evento por slug
+            cursor.execute("""
+                SELECT * FROM evento 
+                WHERE slug = %s AND activo = TRUE
+            """, (slug,))
+            evento = cursor.fetchone()
         
         if not evento:
             return render_template('no_event.html'), 404
@@ -264,7 +311,7 @@ def evento_form(slug):
         return render_template('form.html', evento=evento)
         
     except Exception as e:
-        logger.error(f"Error al cargar formulario de evento: {e}")
+        logger.exception("Error al cargar formulario de evento (slug=%s)", slug)
         return render_template('no_event.html'), 500
 
 
@@ -463,37 +510,30 @@ def api_confirmacion():
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
         user_agent = request.headers.get('User-Agent', '')
         
-        # Insertar en base de datos
-        conn = db_conn()
-        cursor = conn.cursor()
-        
         try:
-            cursor.execute("""
-                INSERT INTO confirmacion_asistencia 
-                (id_evento, dependencia, puesto, grado, nombre_completo, email,
-                 trae_vehiculo, vehiculo_modelo, vehiculo_color, vehiculo_placas,
-                 ip, user_agent, confirmado_en)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-            """, (
-                id_evento,
-                dependencia,
-                puesto,
-                grado,
-                nombre_completo,
-                email,
-                trae_vehiculo,
-                vehiculo_modelo,
-                vehiculo_color,
-                vehiculo_placas,
-                ip_address,
-                user_agent
-            ))
+            with db_transaction() as (_, cursor):
+                cursor.execute("""
+                    INSERT INTO confirmacion_asistencia 
+                    (id_evento, dependencia, puesto, grado, nombre_completo, email,
+                     trae_vehiculo, vehiculo_modelo, vehiculo_color, vehiculo_placas,
+                     ip, user_agent, confirmado_en)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                """, (
+                    id_evento,
+                    dependencia,
+                    puesto,
+                    grado,
+                    nombre_completo,
+                    email,
+                    trae_vehiculo,
+                    vehiculo_modelo,
+                    vehiculo_color,
+                    vehiculo_placas,
+                    ip_address,
+                    user_agent
+                ))
 
-            confirmacion_id = cursor.lastrowid
-            
-            conn.commit()
-            cursor.close()
-            conn.close()
+                confirmacion_id = cursor.lastrowid
 
             # Evitar PII en logs: registrar IDs y metadatos operativos
             logger.info(
@@ -503,16 +543,13 @@ def api_confirmacion():
                 trae_vehiculo,
                 ip_address,
             )
-            
+
             return jsonify({
                 'ok': True,
                 'redirect': url_for('success', conf_id=confirmacion_id)
             }), 200
-            
+
         except MySQLError as e:
-            cursor.close()
-            conn.close()
-            
             # Detectar error de duplicado
             if e.errno == 1062:  # Duplicate entry
                 logger.info(
@@ -524,19 +561,19 @@ def api_confirmacion():
                     'ok': False,
                     'error': 'Esta persona ya tiene una confirmación registrada para este evento'
                 }), 409
-            else:
-                logger.exception(
-                    "Error MySQL al insertar confirmación (evento_id=%s ip=%s)",
-                    id_evento,
-                    ip_address,
-                )
-                return jsonify({
-                    'ok': False,
-                    'error': 'Error al registrar la confirmación. Por favor intente nuevamente.'
-                }), 500
+
+            logger.exception(
+                "Error MySQL al insertar confirmación (evento_id=%s ip=%s)",
+                id_evento,
+                ip_address,
+            )
+            return jsonify({
+                'ok': False,
+                'error': 'Error al registrar la confirmación. Por favor intente nuevamente.'
+            }), 500
                 
-    except Exception as e:
-        logger.error(f"Error en api_confirmacion: {e}")
+    except Exception:
+        logger.exception("Error en api_confirmacion")
         return jsonify({
             'ok': False,
             'error': 'Error interno del servidor'
@@ -582,34 +619,29 @@ def admin_logout():
 def ver_todas_confirmaciones():
     """Ver todas las confirmaciones de todos los eventos"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Obtener todas las confirmaciones con información del evento
-        cursor.execute("""
-            SELECT 
-                e.titulo as evento_titulo,
-                e.slug as evento_slug,
-                c.*
-            FROM confirmacion_asistencia c
-            JOIN evento e ON c.id_evento = e.id
-            ORDER BY c.confirmado_en DESC
-        """)
-        todas_confirmaciones = cursor.fetchall()
-        
-        # Obtener estadísticas
-        cursor.execute("SELECT COUNT(*) as total FROM confirmacion_asistencia")
-        stats = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
+        with db_cursor(dictionary=True) as (_, cursor):
+            # Obtener todas las confirmaciones con información del evento
+            cursor.execute("""
+                SELECT 
+                    e.titulo as evento_titulo,
+                    e.slug as evento_slug,
+                    c.*
+                FROM confirmacion_asistencia c
+                JOIN evento e ON c.id_evento = e.id
+                ORDER BY c.confirmado_en DESC
+            """)
+            todas_confirmaciones = cursor.fetchall()
+
+            # Obtener estadísticas
+            cursor.execute("SELECT COUNT(*) as total FROM confirmacion_asistencia")
+            stats = cursor.fetchone()
         
         return render_template('todas_confirmaciones.html',
                              confirmaciones=todas_confirmaciones,
                              total=stats['total'])
         
     except Exception as e:
-        logger.error(f"Error al cargar todas las confirmaciones: {e}")
+        logger.exception("Error al cargar todas las confirmaciones")
         flash('Error al cargar las confirmaciones', 'danger')
         return redirect(url_for('admin_panel'))
 
@@ -619,39 +651,34 @@ def ver_todas_confirmaciones():
 def admin_panel():
     """Panel de administración"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Obtener todos los eventos
-        cursor.execute("""
-            SELECT e.*, 
-                   COUNT(c.id) as total_confirmaciones
-            FROM evento e
-            LEFT JOIN confirmacion_asistencia c ON e.id = c.id_evento
-            GROUP BY e.id
-            ORDER BY e.creado_en DESC
-        """)
-        eventos = cursor.fetchall()
-        
-        # Obtener confirmaciones si se seleccionó un slug
-        confirmaciones = []
-        selected_slug = request.args.get('slug')
-        selected_evento = None
-        
-        if selected_slug:
-            cursor.execute("SELECT id, titulo, slug FROM evento WHERE slug = %s", (selected_slug,))
-            selected_evento = cursor.fetchone()
-            
-            if selected_evento:
-                cursor.execute("""
-                    SELECT * FROM confirmacion_asistencia 
-                    WHERE id_evento = %s
-                    ORDER BY confirmado_en DESC
-                """, (selected_evento['id'],))
-                confirmaciones = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
+        with db_cursor(dictionary=True) as (_, cursor):
+            # Obtener todos los eventos
+            cursor.execute("""
+                SELECT e.*, 
+                       COUNT(c.id) as total_confirmaciones
+                FROM evento e
+                LEFT JOIN confirmacion_asistencia c ON e.id = c.id_evento
+                GROUP BY e.id
+                ORDER BY e.creado_en DESC
+            """)
+            eventos = cursor.fetchall()
+
+            # Obtener confirmaciones si se seleccionó un slug
+            confirmaciones = []
+            selected_slug = request.args.get('slug')
+            selected_evento = None
+
+            if selected_slug:
+                cursor.execute("SELECT id, titulo, slug FROM evento WHERE slug = %s", (selected_slug,))
+                selected_evento = cursor.fetchone()
+
+                if selected_evento:
+                    cursor.execute("""
+                        SELECT * FROM confirmacion_asistencia 
+                        WHERE id_evento = %s
+                        ORDER BY confirmado_en DESC
+                    """, (selected_evento['id'],))
+                    confirmaciones = cursor.fetchall()
         
         return render_template('admin.html', 
                              eventos=eventos, 
@@ -661,7 +688,7 @@ def admin_panel():
                              ubicaciones=list_predefined_locations())
         
     except Exception as e:
-        logger.error(f"Error en admin_panel: {e}")
+        logger.exception("Error en admin_panel")
         flash('Error al cargar el panel de administración', 'danger')
         return render_template('admin.html', eventos=[], confirmaciones=[])
 
@@ -696,33 +723,28 @@ def crear_evento():
         # Mantener lugar para compatibilidad / display legacy
         lugar = ubicacion_nombre
         
-        conn = db_conn()
-        cursor = conn.cursor()
-        
-        # Si se activa este evento, desactivar todos los demás
-        if activo:
-            cursor.execute("UPDATE evento SET activo = FALSE")
-        
-        # Insertar evento
-        cursor.execute("""
-            INSERT INTO evento (
+        with db_transaction() as (_, cursor):
+            # Si se activa este evento, desactivar todos los demás
+            if activo:
+                cursor.execute("UPDATE evento SET activo = FALSE")
+
+            # Insertar evento
+            cursor.execute("""
+                INSERT INTO evento (
+                    slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
+                    lugar,
+                    ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+                    activo
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
                 slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
                 lugar,
                 ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
                 activo
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin,
-            lugar,
-            ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
-            activo
-        ))
-        
-        conn.commit()
-        evento_id = cursor.lastrowid
-        cursor.close()
-        conn.close()
+            ))
+
+            evento_id = cursor.lastrowid
         
         flash(f'Evento "{titulo}" creado exitosamente', 'success')
         logger.info(
@@ -756,21 +778,15 @@ def crear_evento():
 def editar_evento(evento_id):
     """Editar un evento existente"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-
-        cursor.execute("SELECT * FROM evento WHERE id = %s", (evento_id,))
-        evento = cursor.fetchone()
+        with db_cursor(dictionary=True) as (_, cursor):
+            cursor.execute("SELECT * FROM evento WHERE id = %s", (evento_id,))
+            evento = cursor.fetchone()
 
         if not evento:
-            cursor.close()
-            conn.close()
             flash('Evento no encontrado', 'danger')
             return redirect(url_for('admin_panel'))
 
         if request.method == 'GET':
-            cursor.close()
-            conn.close()
             return render_template('editar_evento.html', evento=evento, ubicaciones=list_predefined_locations())
 
         # POST: actualizar
@@ -783,20 +799,14 @@ def editar_evento(evento_id):
         activo = request.form.get('activo') == 'on'
 
         if not slug or not titulo:
-            cursor.close()
-            conn.close()
             flash('El slug y el título son obligatorios', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
 
         if not re.fullmatch(r'[a-z0-9\-]+', slug):
-            cursor.close()
-            conn.close()
             flash('Slug inválido. Usa solo minúsculas, números y guiones.', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
 
         if not ubicacion_key or ubicacion_key not in PREDEFINED_LOCATIONS:
-            cursor.close()
-            conn.close()
             flash('Debe seleccionar una ubicación válida para el evento', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
 
@@ -808,36 +818,34 @@ def editar_evento(evento_id):
         # Mantener lugar para compatibilidad / display legacy
         lugar = ubicacion_nombre
 
-        # Si se marca activo, desactivar todos los demás
-        cursor2 = conn.cursor()
         try:
-            if activo:
-                cursor2.execute("UPDATE evento SET activo = FALSE WHERE id <> %s", (evento_id,))
+            with db_transaction() as (_, cursor):
+                if activo:
+                    cursor.execute("UPDATE evento SET activo = FALSE WHERE id <> %s", (evento_id,))
 
-            cursor2.execute(
-                """
-                UPDATE evento
-                SET slug = %s,
-                    titulo = %s,
-                    fecha_recepcion = %s,
-                    fecha_inicio = %s,
-                    fecha_fin = %s,
-                    lugar = %s,
-                    ubicacion_key = %s,
-                    ubicacion_nombre = %s,
-                    ubicacion_lat = %s,
-                    ubicacion_lng = %s,
-                    activo = %s
-                WHERE id = %s
-                """,
-                (
-                    slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin, lugar,
-                    ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
-                    activo, evento_id
+                cursor.execute(
+                    """
+                    UPDATE evento
+                    SET slug = %s,
+                        titulo = %s,
+                        fecha_recepcion = %s,
+                        fecha_inicio = %s,
+                        fecha_fin = %s,
+                        lugar = %s,
+                        ubicacion_key = %s,
+                        ubicacion_nombre = %s,
+                        ubicacion_lat = %s,
+                        ubicacion_lng = %s,
+                        activo = %s
+                    WHERE id = %s
+                    """,
+                    (
+                        slug, titulo, fecha_recepcion, fecha_inicio, fecha_fin, lugar,
+                        ubicacion_key, ubicacion_nombre, ubicacion_lat, ubicacion_lng,
+                        activo, evento_id
+                    )
                 )
-            )
 
-            conn.commit()
             logger.info(
                 "Evento actualizado (evento_id=%s slug=%s activo=%s ubicacion_key=%s)",
                 evento_id,
@@ -847,7 +855,6 @@ def editar_evento(evento_id):
             )
 
         except MySQLError as e:
-            conn.rollback()
             if e.errno == 1062:
                 flash('Ya existe un evento con ese slug', 'danger')
                 return redirect(url_for('editar_evento', evento_id=evento_id))
@@ -858,10 +865,6 @@ def editar_evento(evento_id):
             )
             flash('Error al actualizar el evento', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
-        finally:
-            cursor2.close()
-            cursor.close()
-            conn.close()
 
         flash('Evento actualizado exitosamente', 'success')
         return redirect(url_for('admin_panel'))
@@ -877,23 +880,17 @@ def editar_evento(evento_id):
 def activar_evento(evento_id):
     """Activar un evento (desactiva todos los demás)"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor()
-        
-        # Desactivar todos
-        cursor.execute("UPDATE evento SET activo = FALSE")
-        
-        # Activar el seleccionado
-        cursor.execute("UPDATE evento SET activo = TRUE WHERE id = %s", (evento_id,))
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
+        with db_transaction() as (_, cursor):
+            # Desactivar todos
+            cursor.execute("UPDATE evento SET activo = FALSE")
+
+            # Activar el seleccionado
+            cursor.execute("UPDATE evento SET activo = TRUE WHERE id = %s", (evento_id,))
         
         flash('Evento activado exitosamente', 'success')
         
     except Exception as e:
-        logger.error(f"Error al activar evento: {e}")
+        logger.exception("Error al activar evento (evento_id=%s)", evento_id)
         flash('Error al activar el evento', 'danger')
     
     return redirect(url_for('admin_panel'))
@@ -904,19 +901,13 @@ def activar_evento(evento_id):
 def desactivar_evento(evento_id):
     """Desactivar un evento"""
     try:
-        conn = db_conn()
-        cursor = conn.cursor()
-        
-        cursor.execute("UPDATE evento SET activo = FALSE WHERE id = %s", (evento_id,))
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
+        with db_transaction() as (_, cursor):
+            cursor.execute("UPDATE evento SET activo = FALSE WHERE id = %s", (evento_id,))
         
         flash('Evento desactivado exitosamente', 'success')
         
     except Exception as e:
-        logger.error(f"Error al desactivar evento: {e}")
+        logger.exception("Error al desactivar evento (evento_id=%s)", evento_id)
         flash('Error al desactivar el evento', 'danger')
     
     return redirect(url_for('admin_panel'))
@@ -932,50 +923,45 @@ def export_csv():
             flash('Slug no especificado', 'danger')
             return redirect(url_for('admin_panel'))
         
-        conn = db_conn()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Obtener evento
-        cursor.execute("SELECT * FROM evento WHERE slug = %s", (slug,))
-        evento = cursor.fetchone()
-        
-        if not evento:
-            flash('Evento no encontrado', 'danger')
-            return redirect(url_for('admin_panel'))
-        
-        # Obtener confirmaciones
-        cursor.execute("""
-            SELECT 
-                e.slug,
-                e.titulo,
-                c.dependencia,
-                c.puesto,
-                c.grado,
-                c.nombre_completo,
-                c.email,
-                c.trae_vehiculo,
-                c.vehiculo_modelo,
-                c.vehiculo_color,
-                c.vehiculo_placas,
-                c.confirmado_en,
-                c.creado_en
-            FROM confirmacion_asistencia c
-            JOIN evento e ON c.id_evento = e.id
-            WHERE c.id_evento = %s
-            ORDER BY c.confirmado_en DESC
-        """, (evento['id'],))
-        
-        confirmaciones = cursor.fetchall()
+        with db_cursor(dictionary=True) as (_, cursor):
+            # Obtener evento
+            cursor.execute("SELECT * FROM evento WHERE slug = %s", (slug,))
+            evento = cursor.fetchone()
 
-        logger.info(
-            "Export CSV (slug=%s evento_id=%s filas=%s)",
-            slug,
-            evento['id'],
-            len(confirmaciones),
-        )
-        
-        cursor.close()
-        conn.close()
+            if not evento:
+                flash('Evento no encontrado', 'danger')
+                return redirect(url_for('admin_panel'))
+
+            # Obtener confirmaciones
+            cursor.execute("""
+                SELECT 
+                    e.slug,
+                    e.titulo,
+                    c.dependencia,
+                    c.puesto,
+                    c.grado,
+                    c.nombre_completo,
+                    c.email,
+                    c.trae_vehiculo,
+                    c.vehiculo_modelo,
+                    c.vehiculo_color,
+                    c.vehiculo_placas,
+                    c.confirmado_en,
+                    c.creado_en
+                FROM confirmacion_asistencia c
+                JOIN evento e ON c.id_evento = e.id
+                WHERE c.id_evento = %s
+                ORDER BY c.confirmado_en DESC
+            """, (evento['id'],))
+
+            confirmaciones = cursor.fetchall()
+
+            logger.info(
+                "Export CSV (slug=%s evento_id=%s filas=%s)",
+                slug,
+                evento['id'],
+                len(confirmaciones),
+            )
         
         # Crear CSV en memoria
         output = io.StringIO()
