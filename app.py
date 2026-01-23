@@ -6,6 +6,7 @@ import os
 import csv
 import io
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import re
 from functools import wraps
 from datetime import datetime
@@ -19,17 +20,77 @@ import mysql.connector
 from mysql.connector import pooling, Error as MySQLError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# Configuración de logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def configure_logging():
+    """Configura logging a consola + archivo persistente (rotación diaria)."""
+    # Permite controlar por variables de entorno / .env
+    level_name = (os.getenv('LOG_LEVEL') or 'INFO').upper()
+    level = getattr(logging, level_name, logging.INFO)
 
-# Cargar variables de entorno
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    default_log_dir = os.path.join(base_dir, 'logs')
+    log_dir = os.getenv('LOG_DIR') or default_log_dir
+    log_file = os.getenv('LOG_FILE') or os.path.join(log_dir, 'app.log')
+
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
+    fmt = logging.Formatter(
+        '%(asctime)s %(levelname)s pid=%(process)d %(name)s: %(message)s'
+    )
+
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    # Evitar duplicar handlers si Gunicorn/uWSGI ya configuraron logging
+    has_file_handler = any(isinstance(h, TimedRotatingFileHandler) for h in root.handlers)
+    if not has_file_handler:
+        file_handler = TimedRotatingFileHandler(
+            log_file,
+            when='midnight',
+            backupCount=int(os.getenv('LOG_BACKUP_COUNT', '14')),
+            encoding='utf-8',
+        )
+        file_handler.setLevel(level)
+        file_handler.setFormatter(fmt)
+        root.addHandler(file_handler)
+
+    has_stream_handler = any(isinstance(h, logging.StreamHandler) for h in root.handlers)
+    if not has_stream_handler:
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(level)
+        stream_handler.setFormatter(fmt)
+        root.addHandler(stream_handler)
+
+    # Mantener el nivel de werkzeug alineado
+    logging.getLogger('werkzeug').setLevel(level)
+
+
+# Cargar variables de entorno antes de configurar logging
 load_dotenv()
+
+# Configurar logging (archivo + consola)
+configure_logging()
+logger = logging.getLogger(__name__)
 
 # Inicializar Flask
 app = Flask(__name__)
 # Soportar tanto SECRET_KEY como FLASK_SECRET_KEY para compatibilidad
 app.secret_key = os.getenv('SECRET_KEY') or os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
+
+
+@app.before_request
+def log_request_summary():
+    """Log de monitoreo: solo rutas relevantes para admin/API."""
+    try:
+        path = request.path or ''
+        if path.startswith('/admin') or path.startswith('/api/'):
+            ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            ua = (request.headers.get('User-Agent') or '')
+            if len(ua) > 160:
+                ua = ua[:160] + '...'
+            logger.info('HTTP %s %s ip=%s', request.method, path, ip)
+    except Exception:
+        # Nunca romper la request por logging
+        pass
 
 # Ubicaciones predefinidas (requeridas para eventos)
 PREDEFINED_LOCATIONS = {
@@ -80,29 +141,58 @@ DB_CONFIG = {
     'autocommit': True
 }
 
-# Pool de conexiones
-try:
-    connection_pool = pooling.MySQLConnectionPool(
-        pool_name="fes_pool",
-        pool_size=int(os.getenv('DB_POOL_SIZE', 5)),
-        pool_reset_session=True,
-        **DB_CONFIG
-    )
-    logger.info("Pool de conexiones MySQL creado exitosamente")
-except MySQLError as e:
-    logger.error(f"Error al crear pool de conexiones: {e}")
-    connection_pool = None
+connection_pool = None
+
+
+def init_connection_pool():
+    """Inicializa el pool una vez por proceso (y deja el error real en logs)."""
+    global connection_pool
+    if connection_pool is not None:
+        return connection_pool
+
+    try:
+        pool_size = int(os.getenv('DB_POOL_SIZE', 5))
+        connection_pool = pooling.MySQLConnectionPool(
+            pool_name="fes_pool",
+            pool_size=pool_size,
+            pool_reset_session=True,
+            **DB_CONFIG
+        )
+        logger.info(
+            "Pool MySQL listo (pool_size=%s host=%s port=%s db=%s user=%s)",
+            pool_size,
+            DB_CONFIG.get('host'),
+            DB_CONFIG.get('port'),
+            DB_CONFIG.get('database'),
+            DB_CONFIG.get('user'),
+        )
+        return connection_pool
+    except MySQLError:
+        logger.exception(
+            "Error al crear pool MySQL (host=%s port=%s db=%s user=%s)",
+            DB_CONFIG.get('host'),
+            DB_CONFIG.get('port'),
+            DB_CONFIG.get('database'),
+            DB_CONFIG.get('user'),
+        )
+        connection_pool = None
+        return None
+
+
+# Intento inicial (en arranque); si falla, se reintenta en la primera petición
+init_connection_pool()
 
 
 # Función para obtener conexión del pool
 def db_conn():
     """Obtiene una conexión del pool"""
-    if not connection_pool:
+    pool = init_connection_pool()
+    if not pool:
         raise Exception("Pool de conexiones no disponible")
     try:
-        return connection_pool.get_connection()
-    except pooling.PoolError as e:
-        logger.error(f"Error al obtener conexión del pool: {e}")
+        return pool.get_connection()
+    except pooling.PoolError:
+        logger.exception("Error al obtener conexión del pool")
         raise
 
 
@@ -404,8 +494,15 @@ def api_confirmacion():
             conn.commit()
             cursor.close()
             conn.close()
-            
-            logger.info(f"Confirmación registrada: {nombre_completo} - Evento ID: {id_evento}")
+
+            # Evitar PII en logs: registrar IDs y metadatos operativos
+            logger.info(
+                "Confirmación registrada (confirmacion_id=%s evento_id=%s trae_vehiculo=%s ip=%s)",
+                confirmacion_id,
+                id_evento,
+                trae_vehiculo,
+                ip_address,
+            )
             
             return jsonify({
                 'ok': True,
@@ -418,12 +515,21 @@ def api_confirmacion():
             
             # Detectar error de duplicado
             if e.errno == 1062:  # Duplicate entry
+                logger.info(
+                    "Confirmación duplicada (evento_id=%s ip=%s)",
+                    id_evento,
+                    ip_address,
+                )
                 return jsonify({
                     'ok': False,
                     'error': 'Esta persona ya tiene una confirmación registrada para este evento'
                 }), 409
             else:
-                logger.error(f"Error MySQL al insertar confirmación: {e}")
+                logger.exception(
+                    "Error MySQL al insertar confirmación (evento_id=%s ip=%s)",
+                    id_evento,
+                    ip_address,
+                )
                 return jsonify({
                     'ok': False,
                     'error': 'Error al registrar la confirmación. Por favor intente nuevamente.'
@@ -614,20 +720,32 @@ def crear_evento():
         ))
         
         conn.commit()
+        evento_id = cursor.lastrowid
         cursor.close()
         conn.close()
         
         flash(f'Evento "{titulo}" creado exitosamente', 'success')
-        logger.info(f"Evento creado: {slug}")
+        logger.info(
+            "Evento creado (evento_id=%s slug=%s activo=%s ubicacion_key=%s)",
+            evento_id,
+            slug,
+            activo,
+            ubicacion_key,
+        )
         
     except MySQLError as e:
         if e.errno == 1062:  # Duplicate entry
             flash('Ya existe un evento con ese slug', 'danger')
         else:
-            logger.error(f"Error MySQL al crear evento: {e}")
+            logger.exception(
+                "Error MySQL al crear evento (slug=%s activo=%s ubicacion_key=%s)",
+                slug,
+                activo,
+                ubicacion_key,
+            )
             flash('Error al crear el evento', 'danger')
     except Exception as e:
-        logger.error(f"Error al crear evento: {e}")
+        logger.exception("Error al crear evento (slug=%s)", slug)
         flash('Error al crear el evento', 'danger')
     
     return redirect(url_for('admin_panel'))
@@ -720,13 +838,24 @@ def editar_evento(evento_id):
             )
 
             conn.commit()
+            logger.info(
+                "Evento actualizado (evento_id=%s slug=%s activo=%s ubicacion_key=%s)",
+                evento_id,
+                slug,
+                activo,
+                ubicacion_key,
+            )
 
         except MySQLError as e:
             conn.rollback()
             if e.errno == 1062:
                 flash('Ya existe un evento con ese slug', 'danger')
                 return redirect(url_for('editar_evento', evento_id=evento_id))
-            logger.error(f"Error MySQL al editar evento: {e}")
+            logger.exception(
+                "Error MySQL al editar evento (evento_id=%s slug=%s)",
+                evento_id,
+                slug,
+            )
             flash('Error al actualizar el evento', 'danger')
             return redirect(url_for('editar_evento', evento_id=evento_id))
         finally:
@@ -738,7 +867,7 @@ def editar_evento(evento_id):
         return redirect(url_for('admin_panel'))
 
     except Exception as e:
-        logger.error(f"Error al editar evento: {e}")
+        logger.exception("Error al editar evento (evento_id=%s)", evento_id)
         flash('Error al editar el evento', 'danger')
         return redirect(url_for('admin_panel'))
 
@@ -837,6 +966,13 @@ def export_csv():
         """, (evento['id'],))
         
         confirmaciones = cursor.fetchall()
+
+        logger.info(
+            "Export CSV (slug=%s evento_id=%s filas=%s)",
+            slug,
+            evento['id'],
+            len(confirmaciones),
+        )
         
         cursor.close()
         conn.close()
@@ -885,7 +1021,7 @@ def export_csv():
         )
         
     except Exception as e:
-        logger.error(f"Error al exportar CSV: {e}")
+        logger.exception("Error al exportar CSV (slug=%s)", request.args.get('slug'))
         flash('Error al exportar datos', 'danger')
         return redirect(url_for('admin_panel'))
 

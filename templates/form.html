@@ -50,14 +50,14 @@
 
                     {% if evento.fecha_recepcion %}
                     <p class="mb-1">
-                        <strong>Recepción:</strong>
+                        <strong>Registro de asistencia en el Auditorio:</strong>
                         {{ evento.fecha_recepcion.strftime('%H:%M') }}
                     </p>
                     {% endif %}
 
                     {% if evento.fecha_inicio %}
                     <p class="{{ 'mb-1' if evento_ubicacion_nombre else 'mb-0' }}">
-                        <strong>Hora:</strong>
+                        <strong>Hora de Inicio del Evento:</strong>
                         {{ evento.fecha_inicio.strftime('%H:%M') }}
                         {% if evento.fecha_fin %}
                         - {{ evento.fecha_fin.strftime('%H:%M') }}

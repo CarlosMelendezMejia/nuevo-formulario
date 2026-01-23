@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600" role="img" aria-labelledby="title desc">
+  <title id="title">Cartel del evento</title>
+  <desc id="desc">Imagen placeholder para el cartel de invitación. Reemplaza este archivo por el cartel real conservando el nombre.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#BF871F"/>
+      <stop offset="1" stop-color="#73654D"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <rect x="60" y="60" width="1080" height="1480" rx="28" fill="white" opacity="0.95"/>
+
+  <text x="100" y="220" font-family="Poppins, Arial, sans-serif" font-size="64" font-weight="700" fill="#73654D">
+    Cartel del Evento
+  </text>
+  <text x="100" y="300" font-family="Poppins, Arial, sans-serif" font-size="34" font-weight="500" fill="#726C6E">
+    Reemplaza static/img/cartel_evento.svg por tu invitación
+  </text>
+
+  <rect x="100" y="380" width="1000" height="960" rx="18" fill="#F2BC57" opacity="0.25" stroke="#BF871F" stroke-width="6"/>
+  <text x="600" y="880" text-anchor="middle" font-family="Poppins, Arial, sans-serif" font-size="48" font-weight="600" fill="#73654D">
+    (Aquí va la imagen)
+  </text>
+
+  <text x="100" y="1460" font-family="Poppins, Arial, sans-serif" font-size="30" fill="#333">
+    Tip: Puedes reemplazarlo por .png/.jpg con el mismo nombre en el template.
+  </text>
+</svg>
